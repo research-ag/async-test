@@ -18,9 +18,9 @@ module {
 
   class Response<T, S, R>(method : ??(T -> S, S -> R), limit : Nat) {
     var lock = true;
-    
+
     public var state : State = #staged;
-    
+
     public var methods : {
       #none;
       #error;
@@ -64,7 +64,7 @@ module {
         case (#error, _) throw Error.reject("Reject was chosen");
         case (_, _) {};
       };
-      
+
       state := #ready;
     };
   };
@@ -114,6 +114,27 @@ module {
     public func release(i : Nat) = base.get(i).release();
 
     public func state(i : Nat) : State = base.get(i).state;
+  };
+
+  public class SimpleStageAsyncMethodTester<R>(iterations_limit : ?Nat) {
+    let base : StageAsyncMethodTester<(), (), R> = StageAsyncMethodTester<(), (), R>(iterations_limit);
+
+    public func stage(arg : ?R) : Nat {
+      base.stage(
+        Option.map<R, ((()) -> (()), (()) -> R)>(
+          arg,
+          func(a) = (func() = (), func() = a),
+        )
+      );
+    };
+
+    public func call() : async () = async await base.call();
+
+    public func call_result() : R = base.call_result();
+
+    public func release(i : Nat) = base.release(i);
+
+    public func state(i : Nat) : State = base.state(i);
   };
 
   public class CallAsyncMethodTester<S, R>(iterations_limit : ?Nat) {
