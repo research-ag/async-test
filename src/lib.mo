@@ -146,7 +146,7 @@ module {
     var last_call_result : ?R = null;
 
     public func call() : async () {
-      let r = base.get(base.add(null));
+      let r = base.get(base.add(?(func() = (), func () = null)));
       await r.run(());
       last_call_result := r.result;
     };
