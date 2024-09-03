@@ -35,7 +35,7 @@ module {
     };
 
     public func run(arg : T) : async () {
-      let s = Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
+      let middle_result = Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
 
       state := #running;
 
@@ -48,9 +48,9 @@ module {
         Debug.trap("Iteration limit reached");
       };
 
-      switch (methods, s) {
-        case (?(_, after), ?state) {
-          let ?r = after(state) else throw Error.reject("");
+      switch (methods, middle_result) {
+        case (?(_, after), ?s) {
+          let ?r = after(s) else throw Error.reject("");
           result := ?r;
         };
         case (_, _) {};
