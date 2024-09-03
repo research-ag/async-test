@@ -16,20 +16,14 @@ module {
     #ready;
   };
 
-  class Response<T, S, R>(method : ??(T -> S, S -> R), limit : Nat) {
+  type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
+
+  class Response<T, S, R>(method : ?Methods<T, S, R>, limit : Nat) {
     var lock = true;
 
     public var state : State = #staged;
 
-    public var methods : {
-      #none;
-      #error;
-      #some : (T -> S, S -> R);
-    } = switch (method) {
-      case (??x) #some(x);
-      case (?null) #error;
-      case (null) #none;
-    };
+    public var methods : ?Methods<T, S, R> = method;
 
     public var result : ?R = null;
 
@@ -41,10 +35,7 @@ module {
     };
 
     public func run(arg : T) : async () {
-      let s = switch (methods) {
-        case (#some(pre, _)) ?pre(arg);
-        case (_) null;
-      };
+      let s = Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
 
       state := #running;
 
@@ -58,10 +49,10 @@ module {
       };
 
       switch (methods, s) {
-        case (#some(_, after), ?state) {
-          result := ?after(state);
+        case (?(_, after), ?state) {
+          let ?r = after(state) else throw Error.reject("");
+          result := ?r;
         };
-        case (#error, _) throw Error.reject("Reject was chosen");
         case (_, _) {};
       };
 
@@ -74,7 +65,7 @@ module {
     var front = 0;
     let limit = Option.get(iterations_limit, 100);
 
-    public func add(method : ??(T -> S, S -> R)) : Nat {
+    public func add(method : ?Methods<T, S, R>) : Nat {
       let response = Response<T, S, R>(method, limit);
       queue.add(response);
       queue.size() - 1;
@@ -96,7 +87,7 @@ module {
     let base : BaseAsyncMethodTester<T, S, R> = BaseAsyncMethodTester<T, S, R>(iterations_limit);
     var last_call_result : ?R = null;
 
-    public func stage(arg : ?(T -> S, S -> R)) : Nat {
+    public func stage(arg : Methods<T, S, R>) : Nat {
       base.add(?arg);
     };
 
@@ -119,14 +110,7 @@ module {
   public class SimpleStageAsyncMethodTester<R>(iterations_limit : ?Nat) {
     let base : StageAsyncMethodTester<(), (), R> = StageAsyncMethodTester<(), (), R>(iterations_limit);
 
-    public func stage(arg : ?R) : Nat {
-      base.stage(
-        Option.map<R, ((()) -> (()), (()) -> R)>(
-          arg,
-          func(a) = (func() = (), func() = a),
-        )
-      );
-    };
+    public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
     public func call() : async () = async await base.call();
 
@@ -141,12 +125,8 @@ module {
     let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
     var last_call_result : ?R = null;
 
-    public func call(arg : S, method : ?(S -> R)) : async () {
-      let m = ?Option.map<S -> R, (S -> S, S -> R)>(
-        method,
-        func(m) = (func(x) = x, m),
-      );
-      let r = base.get(base.add(m));
+    public func call(arg : S, method : (S -> ?R)) : async () {
+      let r = base.get(base.add(?(func(x : S) = x, method)));
       await r.run(arg);
       last_call_result := r.result;
     };
@@ -180,17 +160,9 @@ module {
       let response = base.get(i);
 
       assert Option.isNull(response.result);
+      response.methods := ?(func() = (), func () = result);
 
       response.release();
-
-      switch (result) {
-        case (?r) {
-          response.result := ?r;
-        };
-        case (null) {
-          response.methods := #error;
-        };
-      };
     };
 
     public func state(i : Nat) : State = base.get(i).state;
