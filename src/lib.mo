@@ -91,7 +91,7 @@ module {
       base.add(?arg);
     };
 
-    public func call(arg : T) : async () {
+    public func call(arg : T) : async* () {
       let ?r = base.pop() else Debug.trap("Pop out of empty queue");
       await r.run(arg);
       last_call_result := r.result;
@@ -113,7 +113,9 @@ module {
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
-    public func call() : async () = async await base.call();
+    public func call() : async* () {
+      await* base.call();
+    };
 
     public func call_result() : R = base.call_result();
 
@@ -126,7 +128,7 @@ module {
     let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
     var last_call_result : ?R = null;
 
-    public func call(arg : S, method : (S -> ?R)) : async () {
+    public func call(arg : S, method : (S -> ?R)) : async* () {
       let r = base.get(base.add(?(func(x : S) = x, method)));
       await r.run(arg);
       last_call_result := r.result;
@@ -147,7 +149,7 @@ module {
     let base : BaseAsyncMethodTester<(), (), R> = BaseAsyncMethodTester<(), (), R>(iterations_limit);
     var last_call_result : ?R = null;
 
-    public func call() : async () {
+    public func call() : async* () {
       let r = base.get(base.add(?(func() = (), func () = null)));
       await r.run(());
       last_call_result := r.result;
