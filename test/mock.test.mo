@@ -33,7 +33,7 @@ class CodeToTest(targetAPI : TargetAPI) {
 let target = object {
   public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
   public shared func get() : async Nat {
-    await get_.call();
+    await* get_.call();
     get_.call_result();
   };
 };
