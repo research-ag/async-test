@@ -99,6 +99,7 @@ module {
 
     public func call_result() : R {
       let ?r = last_call_result else Debug.trap("No call result");
+      last_call_result := null;
       r;
     };
 
@@ -133,6 +134,7 @@ module {
 
     public func call_result() : R {
       let ?r = last_call_result else Debug.trap("No call result");
+      last_call_result := null;
       r;
     };
 
@@ -153,6 +155,7 @@ module {
 
     public func call_result() : R {
       let ?r = last_call_result else Debug.trap("No call result");
+      last_call_result := null;
       r;
     };
 
