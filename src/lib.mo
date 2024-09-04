@@ -27,16 +27,20 @@ module {
 
     public var result : ?R = null;
 
+    var middle_result : ?S = null;
+
     public func release() {
       if (not lock) {
         Debug.trap("Response must be locked before release");
       };
       lock := false;
+      let ?(_, after) = methods else return;
+      let ?s = middle_result else Debug.trap("middle result expected");
+      result := after(s);
     };
 
     public func run(arg : T) : async () {
-      let middle_result = Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
-
+      middle_result := Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
       state := #running;
 
       var inc = limit;
@@ -48,13 +52,7 @@ module {
         Debug.trap("Iteration limit reached");
       };
 
-      switch (methods, middle_result) {
-        case (?(_, after), ?s) {
-          let ?r = after(s) else throw Error.reject("");
-          result := ?r;
-        };
-        case (_, _) {};
-      };
+      if (Option.isNull(result)) throw Error.reject("");
 
       state := #ready;
     };
