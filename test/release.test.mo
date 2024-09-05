@@ -15,8 +15,7 @@ func f(g : () -> async ()) : async () {
 let mock = AsyncMethodTester.ReleaseAsyncMethodTester<()>(null);
 
 func g() : async () {
-  await mock.call();
-  mock.call_result();
+  mock.call_result(await* mock.call());
 };
 
 do {
