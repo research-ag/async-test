@@ -129,7 +129,7 @@ module {
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
       let i = base.add(?(func(x : S) = x, method));
       await base.get(i).run(arg);
-      i;    
+      i;
     };
 
     public func call_result(i : Nat) : R = base.call_result(i);
@@ -143,7 +143,7 @@ module {
     let base : BaseAsyncMethodTester<(), (), R> = BaseAsyncMethodTester<(), (), R>(iterations_limit);
 
     public func call() : async* Nat {
-      let i = base.add(?(func() = (), func () = null));
+      let i = base.add(?(func() = (), func() = null));
       await base.get(i).run();
       i;
     };
@@ -157,11 +157,54 @@ module {
       let response = base.get(i);
 
       assert Option.isNull(response.result);
-      response.methods := ?(func() = (), func () = result);
+      response.methods := ?(func() = (), func() = result);
 
       response.release();
     };
 
     public func state(i : Nat) : State = base.get(i).state;
+  };
+
+  public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
+    let limit = Option.get(iterations_limit, 100);
+    var lock_ = true;
+
+    var value_ : T = default;
+
+    public func lock() {
+      if (lock_) {
+        Debug.trap("Variable must be unlocked before lock");
+      };
+      lock_ := false;
+    };
+
+    public func release() {
+      if (not lock_) {
+        Debug.trap("Variable must be locked before release");
+      };
+      lock_ := false;
+    };
+
+    public func await_unlock() : async () {
+      var inc = limit;
+      while (lock_ and inc > 0) {
+        await async ();
+        inc -= 1;
+      };
+      if (inc == 0) {
+        Debug.trap("Iteration limit reached");
+      };
+    };
+
+    public func get() : T {
+      if (lock_) {
+        Debug.trap("Variable must be unlocked before get");
+      };
+      value_;
+    };
+
+    public func set(value : T) {
+      value_ := value;
+    };
   };
 };

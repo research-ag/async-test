@@ -2,9 +2,9 @@ import AsyncMethodTester "../src";
 import Debug "mo:base/Debug";
 
 // This is the API of a target canister which is being called
-// by the canister that we are testing. 
+// by the canister that we are testing.
 type TargetAPI = {
-  get : shared () -> async Nat; 
+  get : shared () -> async Nat;
 };
 
 // This is the original code to test that make asynchronous calls.
@@ -17,7 +17,7 @@ type TargetAPI = {
 // This should be standard practice because it is the most flexible for testing.
 // This technique is used instead of, for example, passing in the actor type or
 // passing in the principal of the target actor.
-// 
+//
 // We can mock the target (see further below) but we cannot modify the code in this class.
 // This code is usually given to us and imported.
 class CodeToTest(targetAPI : TargetAPI) {
@@ -25,24 +25,22 @@ class CodeToTest(targetAPI : TargetAPI) {
   public func fetch() : async* Int {
     let delta = await targetAPI.get();
     balance += delta;
-    balance
+    balance;
   };
 };
 
 // We are mocking the target with AsyncMethodTesters
 let target = object {
   public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
-  public shared func get() : async Nat {
-    get_.call_result(await* get_.call());
-  };
+  public shared func get() : async Nat = async get_.call_result(await* get_.call());
 };
 
 // We are instantiating the code to test
 let code = CodeToTest(target);
 
 // Now the actual test runs
-let fut0 = async { await* code.fetch() };
-let fut1 = async { await* code.fetch() };
+let fut0 = async await* code.fetch();
+let fut1 = async await* code.fetch();
 await async {};
 
 target.get_.release(0, ?5);
@@ -52,4 +50,4 @@ let r0 = await fut0;
 let r1 = await fut1;
 
 Debug.print(debug_show (r0, r1));
-assert r1 == 8;
+assert r0 == 5 and r1 == 8;
