@@ -206,5 +206,9 @@ module {
     public func set(value : T) {
       value_ := value;
     };
+
+    public func reset() {
+      set(default);
+    }
   };
 };
