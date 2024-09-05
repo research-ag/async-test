@@ -62,8 +62,13 @@ module {
 
   class BaseAsyncMethodTester<T, S, R>(iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
-    var front = 0;
+    public var front = 0;
     let limit = Option.get(iterations_limit, 100);
+
+    public func call_result(i : Nat) : R {
+      let ?r = get(i).result else Debug.trap("No call result");
+      r;
+    };
 
     public func add(method : ?Methods<T, S, R>) : Nat {
       let response = Response<T, S, R>(method, limit);
@@ -85,23 +90,19 @@ module {
 
   public class StageAsyncMethodTester<T, S, R>(iterations_limit : ?Nat) {
     let base : BaseAsyncMethodTester<T, S, R> = BaseAsyncMethodTester<T, S, R>(iterations_limit);
-    var last_call_result : ?R = null;
 
     public func stage(arg : Methods<T, S, R>) : Nat {
       base.add(?arg);
     };
 
-    public func call(arg : T) : async* () {
+    public func call(arg : T) : async* Nat {
+      let i = base.front;
       let ?r = base.pop() else Debug.trap("Pop out of empty queue");
       await r.run(arg);
-      last_call_result := r.result;
+      i;
     };
 
-    public func call_result() : R {
-      let ?r = last_call_result else Debug.trap("No call result");
-      last_call_result := null;
-      r;
-    };
+    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat) = base.get(i).release();
 
@@ -113,11 +114,9 @@ module {
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
-    public func call() : async* () {
-      await* base.call();
-    };
+    public func call() : async* Nat = async* await* base.call();
 
-    public func call_result() : R = base.call_result();
+    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat) = base.release(i);
 
@@ -126,19 +125,14 @@ module {
 
   public class CallAsyncMethodTester<S, R>(iterations_limit : ?Nat) {
     let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
-    var last_call_result : ?R = null;
 
-    public func call(arg : S, method : (S -> ?R)) : async* () {
-      let r = base.get(base.add(?(func(x : S) = x, method)));
-      await r.run(arg);
-      last_call_result := r.result;
+    public func call(arg : S, method : (S -> ?R)) : async* Nat {
+      let i = base.add(?(func(x : S) = x, method));
+      await base.get(i).run(arg);
+      i;    
     };
 
-    public func call_result() : R {
-      let ?r = last_call_result else Debug.trap("No call result");
-      last_call_result := null;
-      r;
-    };
+    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat) = base.get(i).release();
 
@@ -147,17 +141,15 @@ module {
 
   public class ReleaseAsyncMethodTester<R>(iterations_limit : ?Nat) {
     let base : BaseAsyncMethodTester<(), (), R> = BaseAsyncMethodTester<(), (), R>(iterations_limit);
-    var last_call_result : ?R = null;
 
-    public func call() : async* () {
-      let r = base.get(base.add(?(func() = (), func () = null)));
-      await r.run(());
-      last_call_result := r.result;
+    public func call() : async* Nat {
+      let i = base.add(?(func() = (), func () = null));
+      await base.get(i).run();
+      i;
     };
 
-    public func call_result() : R {
-      let ?r = last_call_result else Debug.trap("No call result");
-      last_call_result := null;
+    public func call_result(i : Nat) : R {
+      let ?r = base.get(i).result else Debug.trap("No call result");
       r;
     };
 
