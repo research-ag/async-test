@@ -29,25 +29,61 @@ class CodeToTest(targetAPI : TargetAPI) {
   };
 };
 
-// We are mocking the target with AsyncMethodTesters
-let target = object {
-  public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
-  public shared func get() : async Nat = async get_.call_result(await* get_.call());
+// Demo: ReleaseAsyncMethodTester
+do {
+  // We are mocking the target with AsyncMethodTesters
+  let target = object {
+    public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
+    public shared func get() : async Nat {
+      get_.call_result(await* get_.call());
+    };
+  };
+
+  // We are instantiating the code to test
+  let code = CodeToTest(target);
+
+  // Now the actual test runs
+  let fut0 = async await* code.fetch();
+  let fut1 = async await* code.fetch();
+  await async {};
+
+  target.get_.release(0, ?5);
+  target.get_.release(1, ?3);
+
+  let r0 = await fut0;
+  let r1 = await fut1;
+
+  // Debug.print(debug_show (r0, r1));
+  assert r0 == 5 and r1 == 8;
 };
 
-// We are instantiating the code to test
-let code = CodeToTest(target);
+// Demo: CallAsyncMethodTester
+do {
+  // We are mocking the target with AsyncMethodTesters
+  let target = object {
+    public let get_ = AsyncMethodTester.CallAsyncMethodTester<(), Nat>(null);
+    public var x : Nat = 0;
+    public shared func get() : async Nat {
+      get_.call_result(await* get_.call((), func() = ?x));
+    };
+  };
 
-// Now the actual test runs
-let fut0 = async await* code.fetch();
-let fut1 = async await* code.fetch();
-await async {};
+  // We are instantiating the code to test
+  let code = CodeToTest(target);
 
-target.get_.release(0, ?5);
-target.get_.release(1, ?3);
+  // Now the actual test runs
+  let fut0 = async await* code.fetch();
+  let fut1 = async await* code.fetch();
+  await async {};
 
-let r0 = await fut0;
-let r1 = await fut1;
+  target.x := 5;
+  target.get_.release(0);
+  target.x := 3;
+  target.get_.release(1);
 
-Debug.print(debug_show (r0, r1));
-assert r0 == 5 and r1 == 8;
+  let r0 = await fut0;
+  let r1 = await fut1;
+
+  // Debug.print(debug_show (r0, r1));
+  assert r0 == 5 and r1 == 8;
+};
