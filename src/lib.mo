@@ -167,14 +167,16 @@ module {
 
   public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
     let limit = Option.get(iterations_limit, 100);
+    var key_ = "";
     var lock_ = true;
 
     var value_ : T = default;
 
-    public func lock() {
+    public func lock(key : Text) {
       if (lock_) {
-        Debug.trap("Variable must be unlocked before lock");
+        Debug.trap(key_ # " Variable must be unlocked before lock");
       };
+      key_ := key;
       lock_ := false;
     };
 
@@ -183,6 +185,7 @@ module {
         Debug.trap("Variable must be locked before release");
       };
       lock_ := false;
+      key_ := "";
     };
 
     public func await_unlock() : async () {
@@ -192,7 +195,7 @@ module {
         inc -= 1;
       };
       if (inc == 0) {
-        Debug.trap("Iteration limit reached");
+        Debug.trap(key_ # " Iteration limit reached");
       };
     };
 
