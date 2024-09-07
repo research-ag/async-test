@@ -27,7 +27,7 @@ module {
 
     public var result : ?R = null;
 
-    var middle_result : ?S = null;
+    var midstate : ?S = null;
 
     public func release() {
       if (not lock) {
@@ -35,12 +35,12 @@ module {
       };
       lock := false;
       let ?(_, after) = methods else return;
-      let ?s = middle_result else Debug.trap("middle result expected");
+      let ?s = midstate else Debug.trap("middle result expected");
       result := after(s);
     };
 
     public func run(arg : T) : async () {
-      middle_result := Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
+      midstate := Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
       state := #running;
 
       var inc = limit;

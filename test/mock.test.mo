@@ -53,7 +53,7 @@ do {
   let r0 = await fut0;
   let r1 = await fut1;
 
-  Debug.print(debug_show (r0, r1));
+  // Debug.print(debug_show (r0, r1));
   assert r0 == 5 and r1 == 8;
 };
 
@@ -84,6 +84,6 @@ do {
   let r0 = await fut0;
   let r1 = await fut1;
 
-  Debug.print(debug_show (r0, r1));
+  // Debug.print(debug_show (r0, r1));
   assert r0 == 5 and r1 == 8;
 };
