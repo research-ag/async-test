@@ -78,6 +78,7 @@ do {
 
   target.x := 5;
   target.get_.release(0);
+  await async {};
   target.x := 3;
   target.get_.release(1);
 
