@@ -35,11 +35,11 @@ module {
       };
       lock := false;
       let ?(_, after) = methods else return;
-      let ?s = midstate else Debug.trap("middle result expected");
+      let ?s = midstate else Debug.trap("midstate expected");
       result := after(s);
     };
 
-    public func run(arg : T) : async () {
+    public func run(arg : T) : async* () {
       midstate := Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
       state := #running;
 
@@ -96,7 +96,7 @@ module {
     public func call(arg : T) : async* Nat {
       let i = base.front;
       let ?r = base.pop() else Debug.trap("Pop out of empty queue");
-      await r.run(arg);
+      await* r.run(arg);
       i;
     };
 
@@ -126,7 +126,7 @@ module {
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
       let i = base.add(?(func(x : S) = x, method));
-      await base.get(i).run(arg);
+      await* base.get(i).run(arg);
       i;
     };
 
