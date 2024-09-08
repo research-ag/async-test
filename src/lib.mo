@@ -138,27 +138,22 @@ module {
   };
 
   public class ReleaseAsyncMethodTester<R>(iterations_limit : ?Nat) {
-    let base : BaseAsyncMethodTester<(), (), R> = BaseAsyncMethodTester<(), (), R>(iterations_limit);
+    let base : CallAsyncMethodTester<(), R> = CallAsyncMethodTester<(), R>(iterations_limit);
 
     var result : ?R = null;
   
     public func call() : async* Nat {
-      let i = base.add(?(func() = (), func() = result));
-      await base.get(i).run();
-      i;
+      await* base.call((), func() = result);
     };
 
-    public func call_result(i : Nat) : R {
-      let ?r = base.get(i).result else Debug.trap("No call result");
-      r;
-    };
+    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat, result_ : ?R) {
       result := result_; 
-      base.get(i).release();
+      base.release(i);
     };
 
-    public func state(i : Nat) : State = base.get(i).state;
+    public func state(i : Nat) : State = base.state(i);
   };
 
   public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
