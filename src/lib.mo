@@ -23,7 +23,7 @@ module {
 
     public var state : State = #staged;
 
-    public var methods : ?Methods<T, S, R> = method;
+    var methods : ?Methods<T, S, R> = method;
 
     public var result : ?R = null;
 
@@ -140,8 +140,10 @@ module {
   public class ReleaseAsyncMethodTester<R>(iterations_limit : ?Nat) {
     let base : BaseAsyncMethodTester<(), (), R> = BaseAsyncMethodTester<(), (), R>(iterations_limit);
 
+    var result : ?R = null;
+  
     public func call() : async* Nat {
-      let i = base.add(?(func() = (), func() = null));
+      let i = base.add(?(func() = (), func() = result));
       await base.get(i).run();
       i;
     };
@@ -151,13 +153,9 @@ module {
       r;
     };
 
-    public func release(i : Nat, result : ?R) {
-      let response = base.get(i);
-
-      assert Option.isNull(response.result);
-      response.methods := ?(func() = (), func() = result);
-
-      response.release();
+    public func release(i : Nat, result_ : ?R) {
+      result := result_; 
+      base.get(i).release();
     };
 
     public func state(i : Nat) : State = base.get(i).state;
