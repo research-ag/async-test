@@ -34,13 +34,10 @@ module {
         Debug.trap("Response must be locked before release");
       };
       lock := false;
-      let ?s = midstate else {
-        assert state == #staged;
-        return;
+      if (state == #running) {
+        let ?s = midstate else Debug.trap("midstate expected");
+        result := methods.1(s);
       };
-      assert state == #running;
-      let (_, after) = methods;
-      result := after(s);
     };
 
     public func run(arg : T) : async* () {
