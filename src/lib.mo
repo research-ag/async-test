@@ -168,7 +168,7 @@ module {
         Debug.trap(key_ # " Variable must be unlocked before lock");
       };
       key_ := key;
-      lock_ := false;
+      lock_ := true;
     };
 
     public func release() {
