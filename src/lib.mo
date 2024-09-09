@@ -34,12 +34,20 @@ module {
         Debug.trap("Response must be locked before release");
       };
       lock := false;
+      let ?s = midstate else return;
       let (_, after) = methods;
-      let ?s = midstate else Debug.trap("midstate expected");
       result := after(s);
     };
 
     public func run(arg : T) : async* () {
+      if (not lock) {
+        let (pre, after) = methods;
+        result := after(pre(arg));
+        state := #ready;
+        if (Option.isNull(result)) throw Error.reject("");
+        return;
+      };
+
       let (pre, _) = methods;
       midstate := ?pre(arg);
       state := #running;
@@ -52,10 +60,9 @@ module {
       if (inc == 0) {
         Debug.trap("Iteration limit reached");
       };
+      state := #ready;
 
       if (Option.isNull(result)) throw Error.reject("");
-
-      state := #ready;
     };
   };
 
@@ -142,7 +149,7 @@ module {
     let base : CallAsyncMethodTester<(), R> = CallAsyncMethodTester<(), R>(iterations_limit);
 
     var result : ?R = null;
-  
+
     public func call() : async* Nat {
       await* base.call((), func() = result);
     };
@@ -150,7 +157,7 @@ module {
     public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat, result_ : ?R) {
-      result := result_; 
+      result := result_;
       base.release(i);
     };
 
@@ -204,6 +211,6 @@ module {
 
     public func reset() {
       set(default);
-    }
+    };
   };
 };
