@@ -18,12 +18,12 @@ module {
 
   type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
 
-  class Response<T, S, R>(method : ?Methods<T, S, R>, limit : Nat) {
+  class Response<T, S, R>(method : Methods<T, S, R>, limit : Nat) {
     var lock = true;
 
     public var state : State = #staged;
 
-    var methods : ?Methods<T, S, R> = method;
+    var methods : Methods<T, S, R> = method;
 
     public var result : ?R = null;
 
@@ -34,13 +34,14 @@ module {
         Debug.trap("Response must be locked before release");
       };
       lock := false;
-      let ?(_, after) = methods else return;
+      let (_, after) = methods;
       let ?s = midstate else Debug.trap("midstate expected");
       result := after(s);
     };
 
     public func run(arg : T) : async* () {
-      midstate := Option.map<Methods<T, S, R>, S>(methods, func((pre, _)) = pre(arg));
+      let (pre, _) = methods;
+      midstate := ?pre(arg);
       state := #running;
 
       var inc = limit;
@@ -68,7 +69,7 @@ module {
       r;
     };
 
-    public func add(method : ?Methods<T, S, R>) : Nat {
+    public func add(method : Methods<T, S, R>) : Nat {
       let response = Response<T, S, R>(method, limit);
       queue.add(response);
       queue.size() - 1;
@@ -90,7 +91,7 @@ module {
     let base : BaseAsyncMethodTester<T, S, R> = BaseAsyncMethodTester<T, S, R>(iterations_limit);
 
     public func stage(arg : Methods<T, S, R>) : Nat {
-      base.add(?arg);
+      base.add(arg);
     };
 
     public func call(arg : T) : async* Nat {
@@ -125,7 +126,7 @@ module {
     let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
-      let i = base.add(?(func(x : S) = x, method));
+      let i = base.add((func(x : S) = x, method));
       await* base.get(i).run(arg);
       i;
     };
