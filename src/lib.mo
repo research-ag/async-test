@@ -159,7 +159,7 @@ module {
   public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
     let limit = Option.get(iterations_limit, 100);
     var key_ = "";
-    var lock_ = true;
+    var lock_ = false;
 
     var value_ : T = default;
 
@@ -179,7 +179,7 @@ module {
       key_ := "";
     };
 
-    public func await_unlock() : async () {
+    public func await_unlock() : async* () {
       var inc = limit;
       while (lock_ and inc > 0) {
         await async ();
