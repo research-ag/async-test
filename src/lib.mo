@@ -34,7 +34,11 @@ module {
         Debug.trap("Response must be locked before release");
       };
       lock := false;
-      let ?s = midstate else return;
+      let ?s = midstate else {
+        assert state == #staged;
+        return;
+      };
+      assert state == #running;
       let (_, after) = methods;
       result := after(s);
     };
@@ -47,10 +51,10 @@ module {
         if (Option.isNull(result)) throw Error.reject("");
         return;
       };
+      state := #running;
 
       let (pre, _) = methods;
       midstate := ?pre(arg);
-      state := #running;
 
       var inc = limit;
       while (lock and inc > 0) {
