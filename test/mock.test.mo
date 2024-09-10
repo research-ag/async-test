@@ -143,6 +143,7 @@ do {
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
   await async {};
+  await async {};
 
   x := 5;
   target.get_.release(0);
