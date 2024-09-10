@@ -1,4 +1,4 @@
-import AsyncMethodTester "../src";
+import AsyncTester "../src";
 import Debug "mo:base/Debug";
 
 // This is the API of a target canister which is being called
@@ -29,11 +29,11 @@ class CodeToTest(targetAPI : TargetAPI) {
   };
 };
 
-// Demo: ReleaseAsyncMethodTester
+// Demo: ReleaseTester
 do {
-  // We are mocking the target with AsyncMethodTesters
+  // We are mocking the target with AsyncTesters
   let target = object {
-    public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
+    public let get_ = AsyncTester.ReleaseTester<Nat>(null);
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };
@@ -57,11 +57,11 @@ do {
   assert r0 == 5 and r1 == 8;
 };
 
-// Demo: CallAsyncMethodTester
+// Demo: CallTester
 do {
-  // We are mocking the target with AsyncMethodTesters
+  // We are mocking the target with AsyncTesters
   let target = object {
-    public let get_ = AsyncMethodTester.CallAsyncMethodTester<(), Nat>(null);
+    public let get_ = AsyncTester.CallTester<(), Nat>(null);
     public var x : Nat = 0;
     public shared func get() : async Nat {
       get_.call_result(await* get_.call((), func() = ?x));

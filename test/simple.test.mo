@@ -1,4 +1,4 @@
-import AsyncMethodTester "../src";
+import AsyncTester "../src";
 import Debug "mo:base/Debug";
 
 func f(g : () -> async ()) : async () {
@@ -12,7 +12,7 @@ func f(g : () -> async ()) : async () {
   Debug.print("after g");
 };
 
-let mock = AsyncMethodTester.SimpleStageAsyncMethodTester<()>(null);
+let mock = AsyncTester.SimpleStageTester<()>(null);
 
 func g() : async () {
   mock.call_result(await* mock.call());

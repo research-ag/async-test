@@ -67,7 +67,7 @@ module {
     };
   };
 
-  class BaseAsyncMethodTester<T, S, R>(iterations_limit : ?Nat) {
+  class BaseTester<T, S, R>(iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
@@ -95,8 +95,8 @@ module {
     public func get(i : Nat) : Response<T, S, R> = queue.get(i);
   };
 
-  public class StageAsyncMethodTester<T, S, R>(iterations_limit : ?Nat) {
-    let base : BaseAsyncMethodTester<T, S, R> = BaseAsyncMethodTester<T, S, R>(iterations_limit);
+  public class StageTester<T, S, R>(iterations_limit : ?Nat) {
+    let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
 
     public func stage(arg : Methods<T, S, R>) : Nat {
       base.add(arg);
@@ -116,8 +116,8 @@ module {
     public func state(i : Nat) : State = base.get(i).state;
   };
 
-  public class SimpleStageAsyncMethodTester<R>(iterations_limit : ?Nat) {
-    let base : StageAsyncMethodTester<(), (), R> = StageAsyncMethodTester<(), (), R>(iterations_limit);
+  public class SimpleStageTester<R>(iterations_limit : ?Nat) {
+    let base : StageTester<(), (), R> = StageTester<(), (), R>(iterations_limit);
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
@@ -130,8 +130,8 @@ module {
     public func state(i : Nat) : State = base.state(i);
   };
 
-  public class CallAsyncMethodTester<S, R>(iterations_limit : ?Nat) {
-    let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
+  public class CallTester<S, R>(iterations_limit : ?Nat) {
+    let base : BaseTester<S, S, R> = BaseTester<S, S, R>(iterations_limit);
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
       let i = base.add((func(x : S) = x, method));
@@ -146,8 +146,8 @@ module {
     public func state(i : Nat) : State = base.get(i).state;
   };
 
-  public class ReleaseAsyncMethodTester<R>(iterations_limit : ?Nat) {
-    let base : CallAsyncMethodTester<(), R> = CallAsyncMethodTester<(), R>(iterations_limit);
+  public class ReleaseTester<R>(iterations_limit : ?Nat) {
+    let base : CallTester<(), R> = CallTester<(), R>(iterations_limit);
 
     var result : ?R = null;
 
@@ -165,7 +165,7 @@ module {
     public func state(i : Nat) : State = base.state(i);
   };
 
-  public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
+  public class VariableTester<T>(default : T, iterations_limit : ?Nat) {
     let limit = Option.get(iterations_limit, 100);
     var key_ = "";
     var lock_ = false;
