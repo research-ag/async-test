@@ -8,6 +8,7 @@ import Debug "mo:base/Debug";
 import Error "mo:base/Error";
 import Option "mo:base/Option";
 import Buffer "mo:base/Buffer";
+import Generics "mo:generics";
 
 module {
   public type State = {
@@ -102,11 +103,11 @@ module {
       base.add(arg);
     };
 
-    public func call(arg : T) : async* Nat {
-      let i = base.front;
-      let ?r = base.pop() else Debug.trap("Pop out of empty queue");
-      await* r.run(arg);
-      i;
+    public func call(arg : T, output : Generics.Buf<R>) : async* () {
+      let ?response = base.pop() else Debug.trap("Pop out of empty queue");
+      await* response.run(arg);
+      let ?r = response.result else Debug.trap("No result");
+      output.set(r);
     };
 
     public func call_result(i : Nat) : R = base.call_result(i);
@@ -121,7 +122,7 @@ module {
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
-    public func call() : async* Nat = async* await* base.call();
+    public func call(output : Generics.Buf<R>) : async* () = async* await* base.call((), output);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
@@ -133,13 +134,13 @@ module {
   public class CallAsyncMethodTester<S, R>(iterations_limit : ?Nat) {
     let base : BaseAsyncMethodTester<S, S, R> = BaseAsyncMethodTester<S, S, R>(iterations_limit);
 
-    public func call(arg : S, method : (S -> ?R)) : async* Nat {
+    public func call(arg : S, method : (S -> ?R), output : Generics.Buf<R>) : async* () {
       let i = base.add((func(x : S) = x, method));
-      await* base.get(i).run(arg);
-      i;
+      let response = base.get(i);
+      await* response.run(arg);
+      let ?r = response.result else Debug.trap("No result");
+      output.set(r);
     };
-
-    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat) = base.get(i).release();
 
@@ -151,11 +152,9 @@ module {
 
     var result : ?R = null;
 
-    public func call() : async* Nat {
-      await* base.call((), func() = result);
+    public func call(output : Generics.Buf<R>) : async* () {
+      await* base.call((), func() = result, output);
     };
-
-    public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat, result_ : ?R) {
       result := result_;
@@ -188,7 +187,7 @@ module {
       key_ := "";
     };
 
-    public func await_unlock() : async* () {
+    public func get(output : Generics.Buf<T>) : async* () {
       var inc = limit;
       while (lock_ and inc > 0) {
         await async ();
@@ -197,13 +196,7 @@ module {
       if (inc == 0) {
         Debug.trap(key_ # " Iteration limit reached");
       };
-    };
-
-    public func get() : T {
-      if (lock_) {
-        Debug.trap("Variable must be unlocked before get");
-      };
-      value_;
+      output.set(value_);
     };
 
     public func set(value : T) {

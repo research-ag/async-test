@@ -1,5 +1,6 @@
 import AsyncMethodTester "../src";
 import Debug "mo:base/Debug";
+import Generics "mo:generics";
 
 func f(g : () -> async ()) : async () {
   Debug.print("before g");
@@ -15,7 +16,9 @@ func f(g : () -> async ()) : async () {
 let mock = AsyncMethodTester.ReleaseAsyncMethodTester<()>(null);
 
 func g() : async () {
-  mock.call_result(await* mock.call());
+  let output = Generics.Buf<()>();
+  await* mock.call(output);
+  output.get();
 };
 
 do {

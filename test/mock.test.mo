@@ -1,5 +1,5 @@
 import AsyncMethodTester "../src";
-import Debug "mo:base/Debug";
+import Generics "mo:generics";
 
 // This is the API of a target canister which is being called
 // by the canister that we are testing.
@@ -35,7 +35,9 @@ do {
   let target = object {
     public let get_ = AsyncMethodTester.ReleaseAsyncMethodTester<Nat>(null);
     public shared func get() : async Nat {
-      get_.call_result(await* get_.call());
+      let output = Generics.Buf<Nat>();
+      await* get_.call(output);
+      output.get()
     };
   };
 
@@ -64,7 +66,9 @@ do {
     public let get_ = AsyncMethodTester.CallAsyncMethodTester<(), Nat>(null);
     public var x : Nat = 0;
     public shared func get() : async Nat {
-      get_.call_result(await* get_.call((), func() = ?x));
+      let output = Generics.Buf<Nat>();
+      await* get_.call((), func() = ?x, output);
+      output.get()
     };
   };
 
