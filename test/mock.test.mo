@@ -90,3 +90,34 @@ do {
   // Debug.print(debug_show (r0, r1));
   assert r0 == 5 and r1 == 8;
 };
+
+// Demo: StageAsyncMethodTester
+do {
+  // We are mocking the target with AsyncMethodTesters
+  let target = object {
+    public let get_ = AsyncMethodTester.StageAsyncMethodTester<(), (), Nat>(null);
+    public shared func get() : async Nat {
+      get_.call_result(await* get_.call());
+    };
+  };
+
+  ignore target.get_.stage(func() = (), func () = ?5);
+  ignore target.get_.stage(func() = (), func () = ?3);
+
+  // We are instantiating the code to test
+  let code = CodeToTest(target);
+
+  // Now the actual test runs
+  let fut0 = async await* code.fetch();
+  let fut1 = async await* code.fetch();
+  await async {};
+
+  target.get_.release(0);
+  target.get_.release(1);
+
+  let r0 = await fut0;
+  let r1 = await fut1;
+
+  // Debug.print(debug_show (r0, r1));
+  assert r0 == 5 and r1 == 8;
+};
