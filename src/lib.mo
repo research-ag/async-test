@@ -36,7 +36,7 @@ module {
       lock := false;
       if (state == #running) {
         let ?s = midstate else Debug.trap("midstate expected");
-        result := methods.1(s);
+        result := methods.1 (s);
       };
     };
 
@@ -59,7 +59,7 @@ module {
         inc -= 1;
       };
       if (inc == 0) {
-        Debug.trap("Iteration limit reached");
+        Debug.trap("Iteration limit reached in run");
       };
       state := #ready;
 
@@ -93,6 +93,17 @@ module {
     };
 
     public func get(i : Nat) : Response<T, S, R> = queue.get(i);
+
+    public func wait(i : Nat) : async* () {
+      var inc = limit;
+      while (inc > 0 and (queue.size() <= i or queue.get(i).state == #staged)) {
+        await async ();
+        inc -= 1;
+      };
+      if (inc == 0) {
+        Debug.trap("Iteration limit reached in wait");
+      };
+    };
   };
 
   public class StageAsyncMethodTester<T, S, R>(iterations_limit : ?Nat) {
@@ -115,10 +126,7 @@ module {
 
     public func state(i : Nat) : State = base.get(i).state;
 
-    public func wait(i : Nat) : async* () {
-      let r = base.get(i);
-      while (r.state == #staged) await async {};
-    };
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class SimpleStageAsyncMethodTester<R>(iterations_limit : ?Nat) {
@@ -133,6 +141,8 @@ module {
     public func release(i : Nat) = base.release(i);
 
     public func state(i : Nat) : State = base.state(i);
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class CallAsyncMethodTester<S, R>(iterations_limit : ?Nat) {
@@ -149,6 +159,8 @@ module {
     public func release(i : Nat) = base.get(i).release();
 
     public func state(i : Nat) : State = base.get(i).state;
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class ReleaseAsyncMethodTester<R>(iterations_limit : ?Nat) {
@@ -168,6 +180,8 @@ module {
     };
 
     public func state(i : Nat) : State = base.state(i);
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class AsyncVariableTester<T>(default : T, iterations_limit : ?Nat) {
