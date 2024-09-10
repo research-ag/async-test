@@ -47,6 +47,7 @@ do {
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
   await async {};
+  await async {};
 
   target.get_.release(0, ?5);
   target.get_.release(1, ?3);
@@ -75,6 +76,7 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
+  await async {};
   await async {};
 
   target.x := 5;
