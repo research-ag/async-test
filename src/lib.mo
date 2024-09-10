@@ -114,6 +114,11 @@ module {
     public func release(i : Nat) = base.get(i).release();
 
     public func state(i : Nat) : State = base.get(i).state;
+
+    public func wait(i : Nat) : async* () {
+      let r = base.get(i);
+      while (r.state == #staged) await async {};
+    };
   };
 
   public class SimpleStageAsyncMethodTester<R>(iterations_limit : ?Nat) {

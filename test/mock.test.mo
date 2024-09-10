@@ -142,11 +142,12 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  await async {};
-  await async {};
 
+  await* target.get_.wait(0);
   x := 5;
   target.get_.release(0);
+
+  await* target.get_.wait(1);
   x := 3;
   target.get_.release(1);
 
