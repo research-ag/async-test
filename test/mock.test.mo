@@ -23,6 +23,7 @@ type TargetAPI = {
 class CodeToTest(targetAPI : TargetAPI) {
   public var balance : Int = 0;
   public func fetch() : async* Int {
+    await async {};
     let delta = await targetAPI.get();
     balance += delta;
     balance;
