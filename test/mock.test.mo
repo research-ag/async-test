@@ -22,7 +22,9 @@ type TargetAPI = {
 // This code is usually given to us and imported.
 class CodeToTest(targetAPI : TargetAPI) {
   public var balance : Int = 0;
+  
   public func fetch() : async* Int {
+    await async {};
     let delta = await targetAPI.get();
     balance += delta;
     balance;
@@ -45,15 +47,16 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  await async {};
-
+  
+  await* target.get_.wait(0);
   target.get_.release(0, ?5);
+ 
+  await* target.get_.wait(1);
   target.get_.release(1, ?3);
 
   let r0 = await fut0;
   let r1 = await fut1;
 
-  // Debug.print(debug_show (r0, r1));
   assert r0 == 5 and r1 == 8;
 };
 
@@ -74,16 +77,83 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  await async {};
-
+  await* target.get_.wait(0);
   target.x := 5;
   target.get_.release(0);
+
+  await* target.get_.wait(1);
   target.x := 3;
   target.get_.release(1);
 
   let r0 = await fut0;
   let r1 = await fut1;
 
-  // Debug.print(debug_show (r0, r1));
+  assert r0 == 5 and r1 == 8;
+};
+
+// Demo: StageTester
+do {
+  // We are mocking the target with Testers
+  let target = object {
+    public let get_ = AsyncTester.StageTester<(), (), Nat>(null);
+    public shared func get() : async Nat {
+      get_.call_result(await* get_.call());
+    };
+  };
+
+  ignore target.get_.stage(func() = (), func () = ?5);
+  ignore target.get_.stage(func() = (), func () = ?3);
+
+  // We are instantiating the code to test
+  let code = CodeToTest(target);
+
+  // Now the actual test runs
+  let fut0 = async await* code.fetch();
+  let fut1 = async await* code.fetch();
+  
+  await* target.get_.wait(0);
+  target.get_.release(0);
+
+  await* target.get_.wait(1);
+  target.get_.release(1);
+
+  let r0 = await fut0;
+  let r1 = await fut1;
+
+  assert r0 == 5 and r1 == 8;
+};
+
+// Demo: StageTester 2
+do {
+  // We are mocking the target with Testers
+  let target = object {
+    public let get_ = AsyncTester.StageTester<(), (), Nat>(null);
+    public shared func get() : async Nat {
+      get_.call_result(await* get_.call());
+    };
+  };
+  var x : Nat = 0;
+
+  ignore target.get_.stage(func() = (), func () = ?x);
+  ignore target.get_.stage(func() = (), func () = ?x);
+
+  // We are instantiating the code to test
+  let code = CodeToTest(target);
+
+  // Now the actual test runs
+  let fut0 = async await* code.fetch();
+  let fut1 = async await* code.fetch();
+
+  await* target.get_.wait(0);
+  x := 5;
+  target.get_.release(0);
+
+  await* target.get_.wait(1);
+  x := 3;
+  target.get_.release(1);
+
+  let r0 = await fut0;
+  let r1 = await fut1;
+
   assert r0 == 5 and r1 == 8;
 };

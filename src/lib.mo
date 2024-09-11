@@ -18,8 +18,8 @@ module {
 
   type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
 
-  class Response<T, S, R>(method : Methods<T, S, R>, limit : Nat) {
-    var lock = true;
+  class Response<T, S, R>(lock_ : Bool, method : Methods<T, S, R>, limit : Nat) {
+    var lock = lock_;
 
     public var state : State = #staged;
 
@@ -33,11 +33,12 @@ module {
       if (not lock) {
         Debug.trap("Response must be locked before release");
       };
-      lock := false;
-      if (state == #running) {
-        let ?s = midstate else Debug.trap("midstate expected");
-        result := methods.1(s);
+      if (state != #running) {
+        Debug.trap("Response must be #running before release");
       };
+      lock := false;
+      let ?s = midstate else Debug.trap("Midstate expected");
+      result := methods.1 (s);
     };
 
     public func run(arg : T) : async* () {
@@ -59,7 +60,7 @@ module {
         inc -= 1;
       };
       if (inc == 0) {
-        Debug.trap("Iteration limit reached");
+        Debug.trap("Iteration limit reached in run");
       };
       state := #ready;
 
@@ -77,8 +78,8 @@ module {
       r;
     };
 
-    public func add(method : Methods<T, S, R>) : Nat {
-      let response = Response<T, S, R>(method, limit);
+    public func add(lock : Bool, method : Methods<T, S, R>) : Nat {
+      let response = Response<T, S, R>(lock, method, limit);
       queue.add(response);
       queue.size() - 1;
     };
@@ -93,14 +94,25 @@ module {
     };
 
     public func get(i : Nat) : Response<T, S, R> = queue.get(i);
+
+    public func wait(i : Nat) : async* () {
+      var inc = limit;
+      while (inc > 0 and (queue.size() <= i or queue.get(i).state == #staged)) {
+        await async ();
+        inc -= 1;
+      };
+      if (inc == 0) {
+        Debug.trap("Iteration limit reached in wait");
+      };
+    };
   };
 
   public class StageTester<T, S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
 
-    public func stage(arg : Methods<T, S, R>) : Nat {
-      base.add(arg);
-    };
+    public func stage(arg : Methods<T, S, R>) : Nat = base.add(true, arg);
+
+    public func stage_unlocked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -114,12 +126,16 @@ module {
     public func release(i : Nat) = base.get(i).release();
 
     public func state(i : Nat) : State = base.get(i).state;
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class SimpleStageTester<R>(iterations_limit : ?Nat) {
     let base : StageTester<(), (), R> = StageTester<(), (), R>(iterations_limit);
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
+
+    public func stage_unlocked(arg : ?R) : Nat = base.stage_unlocked(func() = (), func() = arg);
 
     public func call() : async* Nat = async* await* base.call();
 
@@ -128,22 +144,30 @@ module {
     public func release(i : Nat) = base.release(i);
 
     public func state(i : Nat) : State = base.state(i);
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class CallTester<S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<S, S, R> = BaseTester<S, S, R>(iterations_limit);
 
-    public func call(arg : S, method : (S -> ?R)) : async* Nat {
-      let i = base.add((func(x : S) = x, method));
+    func call_(lock : Bool, arg : S, method : (S -> ?R)) : async* Nat {
+      let i = base.add(lock, (func(x : S) = x, method));
       await* base.get(i).run(arg);
       i;
     };
+
+    public func call(arg : S, method : (S -> ?R)) : async* Nat = async* await* call_(true, arg, method);
+
+    public func call_unlocked(arg : S, method : (S -> ?R)) : async* Nat = async* await* call_(false, arg, method);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat) = base.get(i).release();
 
     public func state(i : Nat) : State = base.get(i).state;
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class ReleaseTester<R>(iterations_limit : ?Nat) {
@@ -151,9 +175,9 @@ module {
 
     var result : ?R = null;
 
-    public func call() : async* Nat {
-      await* base.call((), func() = result);
-    };
+    public func call() : async* Nat = async* await* base.call((), func() = result);
+
+    public func call_unlocked() : async* Nat = async* await* base.call_unlocked((), func() = result);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
@@ -163,6 +187,8 @@ module {
     };
 
     public func state(i : Nat) : State = base.state(i);
+
+    public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class VariableTester<T>(default : T, iterations_limit : ?Nat) {
