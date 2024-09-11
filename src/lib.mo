@@ -112,7 +112,7 @@ module {
 
     public func stage(arg : Methods<T, S, R>) : Nat = base.add(true, arg);
 
-    public func stage_uncloked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
+    public func stage_unlocked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -135,7 +135,7 @@ module {
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
-    public func stage_uncloked(arg : ?R) : Nat = base.stage_uncloked(func() = (), func() = arg);
+    public func stage_unlocked(arg : ?R) : Nat = base.stage_unlocked(func() = (), func() = arg);
 
     public func call() : async* Nat = async* await* base.call();
 
