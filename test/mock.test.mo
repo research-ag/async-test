@@ -1,5 +1,4 @@
 import AsyncTester "../src";
-import Debug "mo:base/Debug";
 
 // This is the API of a target canister which is being called
 // by the canister that we are testing.

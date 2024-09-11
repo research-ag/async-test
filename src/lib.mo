@@ -10,14 +10,21 @@ import Option "mo:base/Option";
 import Buffer "mo:base/Buffer";
 
 module {
+  /// State of a response/call.
   public type State = {
+    /// Staged means the call hasn't arrived yet.
     #staged;
+    /// Running means the call has arrived and is waiting to be released.
     #running;
+    /// Ready means the call has arrived and been released.
     #ready;
   };
 
+  /// The first function is being run before release, the second after release.
+  /// Null in return of the second function means throw an error.
   type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
 
+  /// Class responsible for a single call.
   class Response<T, S, R>(lock_ : Bool, method : Methods<T, S, R>, limit : Nat) {
     var lock = lock_;
 
@@ -29,6 +36,7 @@ module {
 
     var midstate : ?S = null;
 
+    /// Release a call. The call should have arrived at this point.
     public func release() {
       if (not lock) {
         Debug.trap("Response must be locked before release");
@@ -41,6 +49,7 @@ module {
       result := methods.1 (s);
     };
 
+    /// Run a call waiting inside for the release.
     public func run(arg : T) : async* () {
       if (not lock) {
         let (pre, after) = methods;
@@ -68,22 +77,26 @@ module {
     };
   };
 
+  /// Base class for all testers.
   class BaseTester<T, S, R>(iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
 
+    /// Response of the i-th call.
     public func call_result(i : Nat) : R {
       let ?r = get(i).result else Debug.trap("No call result");
       r;
     };
 
+    /// Push back a call
     public func add(lock : Bool, method : Methods<T, S, R>) : Nat {
       let response = Response<T, S, R>(lock, method, limit);
       queue.add(response);
       queue.size() - 1;
     };
 
+    /// Pop front a call
     public func pop() : ?Response<T, S, R> {
       if (front == queue.size()) {
         return null;
@@ -93,8 +106,10 @@ module {
       ?r;
     };
 
+    /// Get the i-th call.
     public func get(i : Nat) : Response<T, S, R> = queue.get(i);
 
+    /// Wait for the arrival of the i-th call.
     public func wait(i : Nat) : async* () {
       var inc = limit;
       while (inc > 0 and (queue.size() <= i or queue.get(i).state == #staged)) {
@@ -107,11 +122,14 @@ module {
     };
   };
 
+  /// Stage version of tester. You first stage the result, then call a method.
   public class StageTester<T, S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
 
+    /// Stage methods
     public func stage(arg : Methods<T, S, R>) : Nat = base.add(true, arg);
 
+    /// Stage already released call
     public func stage_unlocked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
 
     public func call(arg : T) : async* Nat {
