@@ -48,29 +48,22 @@ module {
     public func run(arg : T) : async* () {
       let (pre, after) = methods;
 
-      if (not lock) {
-        result := after(pre(arg));
-        state := #ready;
-        if (Option.isNull(result)) throw Error.reject("");
-        return;
-      };
-
       state := #running;
       midstate := ?pre(arg);
 
-      var inc = limit;
-      while (lock and inc > 0) {
-        await async ();
-        inc -= 1;
-      };
-      if (inc == 0) {
-        Debug.trap("Iteration limit reached in run");
+      if (lock) {
+        var inc = limit;
+        while (lock and inc > 0) {
+          await async ();
+          inc -= 1;
+        };
+        if (inc == 0) {
+          Debug.trap("Iteration limit reached in run");
+        };
       };
 
       state := #ready;
-      let ?s = midstate else Debug.trap("cannot happen");
-      result := after(s);
-//      result := Option.chain<S,R>(midstate, after); // Note that midstate == null cannot happen
+      result := Option.chain<S, R>(midstate, after); // Note that midstate == null cannot happen
 
       if (Option.isNull(result)) throw Error.reject("");
     };
