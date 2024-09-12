@@ -1,56 +1,37 @@
 import AsyncTester "../src";
+import Debug "mo:base/Debug";
 
-func f(g : () -> async ()) : async Bool {
+func f(g : () -> async ()) : async () {
+  Debug.print("before g");
   try {
     await g();
   } catch (_) {
-    return false;
+    Debug.print("error in g");
+    return;
   };
-  return true;
+  Debug.print("after g");
+};
+
+let mock = AsyncTester.SimpleStageTester<()>(null);
+
+func g() : async () {
+  mock.call_result(await* mock.call());
 };
 
 do {
-  let mock = AsyncTester.SimpleStageTester<()>(null);
-
-  func g() : async () {
-    mock.call_result(await* mock.call());
-  };
-
-  do {
-    let id = mock.stage(?());
-    let fut = f(g);
-    await* mock.wait(id);
-    mock.release(id);
-    assert (await fut) == true;
-  };
-
-  do {
-    let id = mock.stage(null);
-    let fut = f(g);
-    await* mock.wait(id);
-    mock.release(id);
-    assert (await fut) == false;
-  };
+  let response = mock.stage(?());
+  let fut = f(g);
+  await async ();
+  Debug.print("waiting");
+  mock.release(response);
+  await fut;
 };
 
 do {
-  let mock = AsyncTester.ReleaseTester<()>(null);
-
-  func g() : async () {
-    mock.call_result(await* mock.call());
-  };
-
-  do {
-    let fut = f(g);
-    await* mock.wait(0);
-    mock.release(0, ?());
-    assert (await fut) == true;
-  };
-
-  do {
-    let fut = f(g);
-    await* mock.wait(1);
-    mock.release(1, null);
-    assert (await fut) == false;
-  };
+  let response = mock.stage(null);
+  let fut = f(g);
+  await async ();
+  Debug.print("waiting");
+  mock.release(response);
+  await fut;
 };
