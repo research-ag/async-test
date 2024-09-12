@@ -41,26 +41,21 @@ module {
       if (not lock) {
         Debug.trap("Response must be locked before release");
       };
-      if (state != #running) {
-        Debug.trap("Response must be #running before release");
-      };
       lock := false;
-      let ?s = midstate else Debug.trap("Midstate expected");
-      result := methods.1 (s);
     };
 
     /// Run a call waiting inside for the release.
     public func run(arg : T) : async* () {
+      let (pre, after) = methods;
+
       if (not lock) {
-        let (pre, after) = methods;
         result := after(pre(arg));
         state := #ready;
         if (Option.isNull(result)) throw Error.reject("");
         return;
       };
-      state := #running;
 
-      let (pre, _) = methods;
+      state := #running;
       midstate := ?pre(arg);
 
       var inc = limit;
@@ -71,7 +66,11 @@ module {
       if (inc == 0) {
         Debug.trap("Iteration limit reached in run");
       };
+
       state := #ready;
+      let ?s = midstate else Debug.trap("cannot happen");
+      result := after(s);
+//      result := Option.chain<S,R>(midstate, after); // Note that midstate == null cannot happen
 
       if (Option.isNull(result)) throw Error.reject("");
     };
@@ -191,16 +190,24 @@ module {
   public class ReleaseTester<R>(iterations_limit : ?Nat) {
     let base : CallTester<(), R> = CallTester<(), R>(iterations_limit);
 
-    var result : ?R = null;
+    var results = Buffer.Buffer<?R>(0);
 
-    public func call() : async* Nat = async* await* base.call((), func() = result);
+    public func call() : async* Nat {
+      let i = results.size();
+      results.add(null);
+      await* base.call((), func() = results.get(i));
+    };
 
-    public func call_unlocked() : async* Nat = async* await* base.call_unlocked((), func() = result);
+    public func call_unlocked() : async* Nat {
+      let i = results.size();
+      results.add(null);
+      await* base.call_unlocked((), func() = results.get(i));
+    };
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
     public func release(i : Nat, result_ : ?R) {
-      result := result_;
+      results.put(i, result_);
       base.release(i);
     };
 

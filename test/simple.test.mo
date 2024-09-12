@@ -31,10 +31,10 @@ do {
   do {
     let response = mock.stage(null);
     let fut = f(g);
-    await* mock.wait(0);
+    await* mock.wait(1);
     Debug.print("waiting");
     mock.release(response);
-    await fut;
+    try {await fut; } catch (_) { assert false};
   };
 };
 

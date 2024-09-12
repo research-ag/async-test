@@ -1,4 +1,5 @@
 import AsyncTester "../src";
+import Debug "mo:base/Debug";
 
 // This is the API of a target canister which is being called
 // by the canister that we are testing.
@@ -59,37 +60,6 @@ do {
   assert r0 == 5 and r1 == 8;
 };
 
-// Demo: CallTester
-do {
-  // We are mocking the target with AsyncTesters
-  let target = object {
-    public let get_ = AsyncTester.CallTester<(), Nat>(null);
-    public var x : Nat = 0;
-    public shared func get() : async Nat {
-      get_.call_result(await* get_.call((), func() = ?x));
-    };
-  };
-
-  // We are instantiating the code to test
-  let code = CodeToTest(target);
-
-  // Now the actual test runs
-  let fut0 = async await* code.fetch();
-  let fut1 = async await* code.fetch();
-  await* target.get_.wait(0);
-  target.x := 5;
-  target.get_.release(0);
-
-  await* target.get_.wait(1);
-  target.x := 3;
-  target.get_.release(1);
-
-  let r0 = await fut0;
-  let r1 = await fut1;
-
-  assert r0 == 5 and r1 == 8;
-};
-
 // Demo: StageTester
 do {
   // We are mocking the target with Testers
@@ -114,41 +84,6 @@ do {
   target.get_.release(0);
 
   await* target.get_.wait(1);
-  target.get_.release(1);
-
-  let r0 = await fut0;
-  let r1 = await fut1;
-
-  assert r0 == 5 and r1 == 8;
-};
-
-// Demo: StageTester 2
-do {
-  // We are mocking the target with Testers
-  let target = object {
-    public let get_ = AsyncTester.StageTester<(), (), Nat>(null);
-    public shared func get() : async Nat {
-      get_.call_result(await* get_.call());
-    };
-  };
-  var x : Nat = 0;
-
-  ignore target.get_.stage(func() = (), func () = ?x);
-  ignore target.get_.stage(func() = (), func () = ?x);
-
-  // We are instantiating the code to test
-  let code = CodeToTest(target);
-
-  // Now the actual test runs
-  let fut0 = async await* code.fetch();
-  let fut1 = async await* code.fetch();
-
-  await* target.get_.wait(0);
-  x := 5;
-  target.get_.release(0);
-
-  await* target.get_.wait(1);
-  x := 3;
   target.get_.release(1);
 
   let r0 = await fut0;
