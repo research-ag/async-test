@@ -1,15 +1,12 @@
 import AsyncTester "../src";
-import Debug "mo:base/Debug";
 
-func f(g : () -> async ()) : async () {
-  Debug.print("before g");
+func f(g : () -> async ()) : async Bool {
   try {
     await g();
   } catch (_) {
-    Debug.print("error in g");
-    return;
+    return false;
   };
-  Debug.print("after g");
+  return true;
 };
 
 do {
@@ -20,21 +17,19 @@ do {
   };
 
   do {
-    let response = mock.stage(?());
+    let id = mock.stage(?());
     let fut = f(g);
-    await* mock.wait(0);
-    Debug.print("waiting");
-    mock.release(response);
-    await fut;
+    await* mock.wait(id);
+    mock.release(id);
+    assert (await fut) == true;
   };
 
   do {
-    let response = mock.stage(null);
+    let id = mock.stage(null);
     let fut = f(g);
-    await* mock.wait(0);
-    Debug.print("waiting");
-    mock.release(response);
-    await fut;
+    await* mock.wait(id);
+    mock.release(id);
+    assert (await fut) == false;
   };
 };
 
@@ -48,16 +43,14 @@ do {
   do {
     let fut = f(g);
     await* mock.wait(0);
-    Debug.print("waiting");
     mock.release(0, ?());
-    await fut;
+    assert (await fut) == true;
   };
 
   do {
     let fut = f(g);
     await* mock.wait(1);
-    Debug.print("waiting");
     mock.release(1, null);
-    await fut;
+    assert (await fut) == false;
   };
 };
