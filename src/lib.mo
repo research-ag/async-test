@@ -10,93 +10,74 @@ import Option "mo:base/Option";
 import Buffer "mo:base/Buffer";
 
 module {
-  /// State of a response/call.
   public type State = {
-    /// Staged means the call hasn't arrived yet.
     #staged;
-    /// Running means the call has arrived and is waiting to be released.
     #running;
-    /// Ready means the call has arrived and been released.
     #ready;
   };
 
-  /// The first function is being run before release, the second after release.
-  /// Null in return of the second function means throw an error.
-  type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
+  type PreFunc<T, S> = T -> S;
 
-  /// Class responsible for a single call.
-  class Response<T, S, R>(lock_ : Bool, method : Methods<T, S, R>, limit : Nat) {
+  type PostFunc<S, R> = S -> ?R;
+
+  type Methods<T, S, R> = (pre : T -> S, post : S -> ?R);
+
+  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, limit : Nat) {
     var lock = lock_;
 
     public var state : State = #staged;
 
-    var methods : Methods<T, S, R> = method;
+    let pre : PreFunc<T, S> = pre_;
+
+    public var post : PostFunc<S, R> = post_;
 
     public var result : ?R = null;
 
-    var midstate : ?S = null;
-
-    /// Release a call. The call should have arrived at this point.
     public func release() {
       if (not lock) {
         Debug.trap("Response must be locked before release");
       };
-      if (state != #running) {
-        Debug.trap("Response must be #running before release");
-      };
       lock := false;
-      let ?s = midstate else Debug.trap("Midstate expected");
-      result := methods.1 (s);
     };
 
-    /// Run a call waiting inside for the release.
     public func run(arg : T) : async* () {
-      if (not lock) {
-        let (pre, after) = methods;
-        result := after(pre(arg));
-        state := #ready;
-        if (Option.isNull(result)) throw Error.reject("");
-        return;
-      };
       state := #running;
+      let midstate = pre(arg);
 
-      let (pre, _) = methods;
-      midstate := ?pre(arg);
+      if (lock) {
+        var inc = limit;
+        while (lock and inc > 0) {
+          await async ();
+          inc -= 1;
+        };
+        if (inc == 0) {
+          Debug.trap("Iteration limit reached in run");
+        };
+      };
 
-      var inc = limit;
-      while (lock and inc > 0) {
-        await async ();
-        inc -= 1;
-      };
-      if (inc == 0) {
-        Debug.trap("Iteration limit reached in run");
-      };
       state := #ready;
+      result := post(midstate);
 
       if (Option.isNull(result)) throw Error.reject("");
     };
   };
 
-  /// Base class for all testers.
   class BaseTester<T, S, R>(iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
 
-    /// Response of the i-th call.
     public func call_result(i : Nat) : R {
       let ?r = get(i).result else Debug.trap("No call result");
       r;
     };
 
-    /// Push back a call
-    public func add(lock : Bool, method : Methods<T, S, R>) : Nat {
-      let response = Response<T, S, R>(lock, method, limit);
+    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat {
+      let response = Response<T, S, R>(lock, pre, post, limit);
       queue.add(response);
       queue.size() - 1;
     };
 
-    /// Pop front a call
     public func pop() : ?Response<T, S, R> {
       if (front == queue.size()) {
         return null;
@@ -106,10 +87,12 @@ module {
       ?r;
     };
 
-    /// Get the i-th call.
     public func get(i : Nat) : Response<T, S, R> = queue.get(i);
 
-    /// Wait for the arrival of the i-th call.
+    public func state(i : Nat) : State = queue.get(i).state;
+
+    public func release(i : Nat) = queue.get(i).release();
+
     public func wait(i : Nat) : async* () {
       var inc = limit;
       while (inc > 0 and (queue.size() <= i or queue.get(i).state == #staged)) {
@@ -122,15 +105,12 @@ module {
     };
   };
 
-  /// Stage version of tester. You first stage the result, then call a method.
   public class StageTester<T, S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
 
-    /// Stage methods
-    public func stage(arg : Methods<T, S, R>) : Nat = base.add(true, arg);
+    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(true, pre, post);
 
-    /// Stage already released call
-    public func stage_unlocked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
+    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(false, pre, post);
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -141,9 +121,9 @@ module {
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
-    public func release(i : Nat) = base.get(i).release();
+    public func release(i : Nat) = base.release(i);
 
-    public func state(i : Nat) : State = base.get(i).state;
+    public func state(i : Nat) : State = base.state(i);
 
     public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
@@ -169,8 +149,8 @@ module {
   public class CallTester<S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<S, S, R> = BaseTester<S, S, R>(iterations_limit);
 
-    func call_(lock : Bool, arg : S, method : (S -> ?R)) : async* Nat {
-      let i = base.add(lock, (func(x : S) = x, method));
+    func call_(lock : Bool, arg : S, method : PostFunc<S, R>) : async* Nat {
+      let i = base.add(lock, func(x : S) = x, method);
       await* base.get(i).run(arg);
       i;
     };
@@ -181,27 +161,32 @@ module {
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
-    public func release(i : Nat) = base.get(i).release();
+    public func release(i : Nat) = base.release(i);
 
-    public func state(i : Nat) : State = base.get(i).state;
+    public func state(i : Nat) : State = base.state(i);
 
     public func wait(i : Nat) : async* () = async* await* base.wait(i);
   };
 
   public class ReleaseTester<R>(iterations_limit : ?Nat) {
-    let base : CallTester<(), R> = CallTester<(), R>(iterations_limit);
+    let base : BaseTester<(), (), R> = BaseTester<(), (), R>(iterations_limit);
 
-    var result : ?R = null;
+    func call_(lock : Bool) : async* Nat {
+      let i = base.add(lock, func() = (), func() = null);
+      await* base.get(i).run();
+      i;
+    };
 
-    public func call() : async* Nat = async* await* base.call((), func() = result);
+    public func call() : async* Nat = async* await* call_(true);
 
-    public func call_unlocked() : async* Nat = async* await* base.call_unlocked((), func() = result);
+    public func call_unlocked() : async* Nat = async* await* call_(false);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
-    public func release(i : Nat, result_ : ?R) {
-      result := result_;
-      base.release(i);
+    public func release(i : Nat, result : ?R) {
+      let r = base.get(i);
+      r.post := func() = result;
+      r.release();
     };
 
     public func state(i : Nat) : State = base.state(i);
