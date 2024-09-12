@@ -16,14 +16,20 @@ module {
     #ready;
   };
 
-  type Methods<T, S, R> = (pre : T -> S, after : S -> ?R);
+  type PreFunc<T, S> = T -> S;
 
-  class Response<T, S, R>(lock_ : Bool, method : Methods<T, S, R>, limit : Nat) {
+  type PostFunc<S, R> = S -> ?R;
+
+  type Methods<T, S, R> = (pre : T -> S, post : S -> ?R);
+
+  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, limit : Nat) {
     var lock = lock_;
 
     public var state : State = #staged;
 
-    public var methods : Methods<T, S, R> = method;
+    let pre : PreFunc<T, S> = pre_;
+
+    public var post : PostFunc<S, R> = post_;
 
     public var result : ?R = null;
 
@@ -36,7 +42,7 @@ module {
 
     public func run(arg : T) : async* () {
       state := #running;
-      let midstate = methods.0(arg);
+      let midstate = pre(arg);
 
       if (lock) {
         var inc = limit;
@@ -50,7 +56,7 @@ module {
       };
 
       state := #ready;
-      result := methods.1(midstate);
+      result := post(midstate);
 
       if (Option.isNull(result)) throw Error.reject("");
     };
@@ -66,8 +72,8 @@ module {
       r;
     };
 
-    public func add(lock : Bool, method : Methods<T, S, R>) : Nat {
-      let response = Response<T, S, R>(lock, method, limit);
+    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat {
+      let response = Response<T, S, R>(lock, pre, post, limit);
       queue.add(response);
       queue.size() - 1;
     };
@@ -102,9 +108,9 @@ module {
   public class StageTester<T, S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
 
-    public func stage(arg : Methods<T, S, R>) : Nat = base.add(true, arg);
+    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(true, pre, post);
 
-    public func stage_unlocked(arg : Methods<T, S, R>) : Nat = base.add(false, arg);
+    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(false, pre, post);
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -143,8 +149,8 @@ module {
   public class CallTester<S, R>(iterations_limit : ?Nat) {
     let base : BaseTester<S, S, R> = BaseTester<S, S, R>(iterations_limit);
 
-    func call_(lock : Bool, arg : S, method : (S -> ?R)) : async* Nat {
-      let i = base.add(lock, (func(x : S) = x, method));
+    func call_(lock : Bool, arg : S, method : PostFunc<S, R>) : async* Nat {
+      let i = base.add(lock, func(x : S) = x, method);
       await* base.get(i).run(arg);
       i;
     };
@@ -166,7 +172,7 @@ module {
     let base : BaseTester<(), (), R> = BaseTester<(), (), R>(iterations_limit);
 
     func call_(lock : Bool) : async* Nat {
-      let i = base.add(lock, (func() = (), func() = null));
+      let i = base.add(lock, func() = (), func() = null);
       await* base.get(i).run();
       i;
     };
@@ -179,7 +185,7 @@ module {
 
     public func release(i : Nat, result : ?R) {
       let r = base.get(i);
-      r.methods := (func() = (), func() = result);
+      r.post := func() = result;
       r.release();
     };
 
