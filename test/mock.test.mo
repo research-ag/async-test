@@ -1,5 +1,4 @@
 import AsyncTester "../src";
-import Debug "mo:base/Debug";
 
 // This is the API of a target canister which is being called
 // by the canister that we are testing.
@@ -48,10 +47,10 @@ do {
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
   
-  await* target.get_.wait(0);
+  await* target.get_.wait(0, #running);
   target.get_.release(0, ?5);
  
-  await* target.get_.wait(1);
+  await* target.get_.wait(1, #running);
   target.get_.release(1, ?3);
 
   let r0 = await fut0;
@@ -80,10 +79,10 @@ do {
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
   
-  await* target.get_.wait(0);
+  await* target.get_.wait(0, #running);
   target.get_.release(0);
 
-  await* target.get_.wait(1);
+  await* target.get_.wait(1, #running);
   target.get_.release(1);
 
   let r0 = await fut0;

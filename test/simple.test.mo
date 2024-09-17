@@ -22,7 +22,7 @@ do {
   do {
     let response = mock.stage(?());
     let fut = f(g);
-    await* mock.wait(0);
+    await* mock.wait(0, #running);
     Debug.print("waiting");
     mock.release(response);
     await fut;
@@ -31,7 +31,7 @@ do {
   do {
     let response = mock.stage(null);
     let fut = f(g);
-    await* mock.wait(1);
+    await* mock.wait(1, #running);
     Debug.print("waiting");
     mock.release(response);
     try {await fut; } catch (_) { assert false};
@@ -47,7 +47,7 @@ do {
 
   do {
     let fut = f(g);
-    await* mock.wait(0);
+    await* mock.wait(0, #running);
     Debug.print("waiting");
     mock.release(0, ?());
     await fut;
@@ -55,7 +55,7 @@ do {
 
   do {
     let fut = f(g);
-    await* mock.wait(1);
+    await* mock.wait(1, #running);
     Debug.print("waiting");
     mock.release(1, null);
     await fut;

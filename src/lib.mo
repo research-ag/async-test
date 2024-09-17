@@ -16,11 +16,15 @@ module {
     #ready;
   };
 
-  type PreFunc<T, S> = T -> S;
+  func stateNumber(a : State) : Nat = switch (a) {
+    case (#staged) 0;
+    case (#running) 1;
+    case (#ready) 2;
+  };
 
-  type PostFunc<S, R> = S -> ?R;
+  public type PreFunc<T, S> = T -> S;
 
-  type Methods<T, S, R> = (pre : T -> S, post : S -> ?R);
+  public type PostFunc<S, R> = S -> ?R;
 
   class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, limit : Nat) {
     var lock = lock_;
@@ -93,15 +97,16 @@ module {
 
     public func release(i : Nat) = queue.get(i).release();
 
-    public func wait(i : Nat) : async* () {
+    public func wait(i : Nat, state : { #running; #ready }) : async* () {
       var inc = limit;
-      while (inc > 0 and (queue.size() <= i or queue.get(i).state == #staged)) {
+      while (inc > 0 and (queue.size() <= i or stateNumber(queue.get(i).state) < stateNumber(state))) {
         await async ();
         inc -= 1;
       };
       if (inc == 0) {
         Debug.trap("Iteration limit reached in wait");
       };
+      await async ();
     };
   };
 
@@ -125,7 +130,7 @@ module {
 
     public func state(i : Nat) : State = base.state(i);
 
-    public func wait(i : Nat) : async* () = async* await* base.wait(i);
+    public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
   public class SimpleStageTester<R>(iterations_limit : ?Nat) {
@@ -143,7 +148,7 @@ module {
 
     public func state(i : Nat) : State = base.state(i);
 
-    public func wait(i : Nat) : async* () = async* await* base.wait(i);
+    public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
   public class CallTester<S, R>(iterations_limit : ?Nat) {
@@ -165,7 +170,7 @@ module {
 
     public func state(i : Nat) : State = base.state(i);
 
-    public func wait(i : Nat) : async* () = async* await* base.wait(i);
+    public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
   public class ReleaseTester<R>(iterations_limit : ?Nat) {
@@ -191,7 +196,7 @@ module {
 
     public func state(i : Nat) : State = base.state(i);
 
-    public func wait(i : Nat) : async* () = async* await* base.wait(i);
+    public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
   public class VariableTester<T>(default : T, iterations_limit : ?Nat) {
