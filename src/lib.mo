@@ -8,6 +8,7 @@ import Debug "mo:base/Debug";
 import Error "mo:base/Error";
 import Option "mo:base/Option";
 import Buffer "mo:base/Buffer";
+import Nat "mo:base/Nat";
 
 module {
   public type State = {
@@ -16,17 +17,25 @@ module {
     #ready;
   };
 
-  func stateNumber(a : State) : Nat = switch (a) {
-    case (#staged) 0;
-    case (#running) 1;
-    case (#ready) 2;
-  };
-
   public type PreFunc<T, S> = T -> S;
 
   public type PostFunc<S, R> = S -> ?R;
 
-  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, limit : Nat) {
+  func debugMessage(name : ?Text, key : ?Text) : Text {
+    let name_part = switch (name) {
+      case (?t) "Method name: " # t # ".";
+      case null "";
+    };
+    let key_part = switch (key) {
+      case (?t) "Key of response: " # t # ".";
+      case null "";
+    };
+    if (name_part != "" and key_part != "") name_part # " " # key_part else name_part # key_part;
+  };
+
+  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, name : ?Text, key : ?Text, limit : Nat) {
+    let debug_message : Text = debugMessage(name, key);
+
     var lock = lock_;
 
     public var state : State = #staged;
@@ -39,7 +48,7 @@ module {
 
     public func release() {
       if (not lock) {
-        Debug.trap("Response must be locked before release");
+        Debug.trap("Response must be locked before release. " # debug_message);
       };
       lock := false;
     };
@@ -55,18 +64,18 @@ module {
           inc -= 1;
         };
         if (inc == 0) {
-          Debug.trap("Iteration limit reached in run");
+          Debug.trap("Iteration limit reached in run. " # debug_message);
         };
       };
 
       state := #ready;
       result := post(midstate);
 
-      if (Option.isNull(result)) throw Error.reject("");
+      if (Option.isNull(result)) throw Error.reject("Reponse rejected. " # debug_message);
     };
   };
 
-  class BaseTester<T, S, R>(iterations_limit : ?Nat) {
+  class BaseTester<T, S, R>(name : ?Text, iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
@@ -76,8 +85,8 @@ module {
       r;
     };
 
-    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat {
-      let response = Response<T, S, R>(lock, pre, post, limit);
+    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>, key : ?Text) : Nat {
+      let response = Response<T, S, R>(lock, pre, post, name, key, limit);
       queue.add(response);
       queue.size() - 1;
     };
@@ -98,24 +107,29 @@ module {
     public func release(i : Nat) = queue.get(i).release();
 
     public func wait(i : Nat, state : { #running; #ready }) : async* () {
+      func stateNumber(a : State) : Nat = switch (a) {
+        case (#staged) 0;
+        case (#running) 1;
+        case (#ready) 2;
+      };
       var inc = limit;
       while (inc > 0 and (queue.size() <= i or stateNumber(queue.get(i).state) < stateNumber(state))) {
         await async ();
         inc -= 1;
       };
       if (inc == 0) {
-        Debug.trap("Iteration limit reached in wait");
+        Debug.trap("Iteration limit reached in wait. " # debugMessage(name, ?Nat.toText(i)));
       };
       await async ();
     };
   };
 
-  public class StageTester<T, S, R>(iterations_limit : ?Nat) {
-    let base : BaseTester<T, S, R> = BaseTester<T, S, R>(iterations_limit);
+  public class StageTester<T, S, R>(name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<T, S, R> = BaseTester<T, S, R>(name, iterations_limit);
 
-    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(true, pre, post);
+    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(true, pre, post, name);
 
-    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(false, pre, post);
+    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(false, pre, post, name);
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -133,8 +147,8 @@ module {
     public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
-  public class SimpleStageTester<R>(iterations_limit : ?Nat) {
-    let base : StageTester<(), (), R> = StageTester<(), (), R>(iterations_limit);
+  public class SimpleStageTester<R>(name : ?Text, iterations_limit : ?Nat) {
+    let base : StageTester<(), (), R> = StageTester<(), (), R>(name, iterations_limit);
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
@@ -151,18 +165,14 @@ module {
     public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
-  public class CallTester<S, R>(iterations_limit : ?Nat) {
-    let base : BaseTester<S, S, R> = BaseTester<S, S, R>(iterations_limit);
+  public class CallTester<S, R>(name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<S, S, R> = BaseTester<S, S, R>(name, iterations_limit);
 
-    func call_(lock : Bool, arg : S, method : PostFunc<S, R>) : async* Nat {
-      let i = base.add(lock, func(x : S) = x, method);
+    public func call(arg : S, method : (S -> ?R)) : async* Nat {
+      let i = base.add(true, func(x : S) = x, method, name);
       await* base.get(i).run(arg);
       i;
     };
-
-    public func call(arg : S, method : (S -> ?R)) : async* Nat = async* await* call_(true, arg, method);
-
-    public func call_unlocked(arg : S, method : (S -> ?R)) : async* Nat = async* await* call_(false, arg, method);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
@@ -173,18 +183,14 @@ module {
     public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
   };
 
-  public class ReleaseTester<R>(iterations_limit : ?Nat) {
-    let base : BaseTester<(), (), R> = BaseTester<(), (), R>(iterations_limit);
+  public class ReleaseTester<R>(name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<(), (), R> = BaseTester<(), (), R>(name, iterations_limit);
 
-    func call_(lock : Bool) : async* Nat {
-      let i = base.add(lock, func() = (), func() = null);
+    public func call() : async* Nat {
+      let i = base.add(true, func() = (), func() = null, name);
       await* base.get(i).run();
       i;
     };
-
-    public func call() : async* Nat = async* await* call_(true);
-
-    public func call_unlocked() : async* Nat = async* await* call_(false);
 
     public func call_result(i : Nat) : R = base.call_result(i);
 
@@ -197,55 +203,5 @@ module {
     public func state(i : Nat) : State = base.state(i);
 
     public func wait(i : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(i, state);
-  };
-
-  public class VariableTester<T>(default : T, iterations_limit : ?Nat) {
-    let limit = Option.get(iterations_limit, 100);
-    var key_ = "";
-    var lock_ = false;
-
-    var value_ : T = default;
-
-    public func lock(key : Text) {
-      if (lock_) {
-        Debug.trap(key_ # " Variable must be unlocked before lock");
-      };
-      key_ := key;
-      lock_ := true;
-    };
-
-    public func release() {
-      if (not lock_) {
-        Debug.trap("Variable must be locked before release");
-      };
-      lock_ := false;
-      key_ := "";
-    };
-
-    public func await_unlock() : async* () {
-      var inc = limit;
-      while (lock_ and inc > 0) {
-        await async ();
-        inc -= 1;
-      };
-      if (inc == 0) {
-        Debug.trap(key_ # " Iteration limit reached");
-      };
-    };
-
-    public func get() : T {
-      if (lock_) {
-        Debug.trap("Variable must be unlocked before get");
-      };
-      value_;
-    };
-
-    public func set(value : T) {
-      value_ := value;
-    };
-
-    public func reset() {
-      set(default);
-    };
   };
 };
