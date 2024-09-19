@@ -85,11 +85,12 @@ module {
       r;
     };
 
-    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>, key : ?Text) : Nat {
+    public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>, key : ?Text) {
       let response = Response<T, S, R>(lock, pre, post, name, key, limit);
       queue.add(response);
-      queue.size() - 1;
     };
+
+    public func size() : Nat = queue.size();
 
     public func pop() : ?Response<T, S, R> {
       if (front == queue.size()) {
@@ -127,9 +128,15 @@ module {
   public class StageTester<T, S, R>(name : ?Text, iterations_limit : ?Nat) {
     let base : BaseTester<T, S, R> = BaseTester<T, S, R>(name, iterations_limit);
 
-    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(true, pre, post, name);
+    public func stage(pre : PreFunc<T, S>, post : PostFunc<S, R>, key : ?Text) : Nat {
+      base.add(true, pre, post, key);
+      base.size() - 1;
+    };
 
-    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat = base.add(false, pre, post, name);
+    public func stage_unlocked(pre : PreFunc<T, S>, post : PostFunc<S, R>, key : ?Text) : Nat {
+      base.add(false, pre, post, key);
+      base.size() - 1;
+    };
 
     public func call(arg : T) : async* Nat {
       let i = base.front;
@@ -150,9 +157,9 @@ module {
   public class SimpleStageTester<R>(name : ?Text, iterations_limit : ?Nat) {
     let base : StageTester<(), (), R> = StageTester<(), (), R>(name, iterations_limit);
 
-    public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
+    public func stage(arg : ?R, key : ?Text) : Nat = base.stage(func() = (), func() = arg, key);
 
-    public func stage_unlocked(arg : ?R) : Nat = base.stage_unlocked(func() = (), func() = arg);
+    public func stage_unlocked(arg : ?R, key : ?Text) : Nat = base.stage_unlocked(func() = (), func() = arg, key);
 
     public func call() : async* Nat = async* await* base.call();
 
@@ -169,7 +176,8 @@ module {
     let base : BaseTester<S, S, R> = BaseTester<S, S, R>(name, iterations_limit);
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
-      let i = base.add(true, func(x : S) = x, method, name);
+      let i = base.size();
+      base.add(true, func(x : S) = x, method, ?(if (not Option.isNull(name)) Nat.toText(i) else ""));
       await* base.get(i).run(arg);
       i;
     };
@@ -187,7 +195,8 @@ module {
     let base : BaseTester<(), (), R> = BaseTester<(), (), R>(name, iterations_limit);
 
     public func call() : async* Nat {
-      let i = base.add(true, func() = (), func() = null, name);
+      let i = base.size();
+      base.add(true, func() = (), func() = null, ?(if (not Option.isNull(name)) Nat.toText(i) else ""));
       await* base.get(i).run();
       i;
     };
