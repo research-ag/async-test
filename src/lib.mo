@@ -177,7 +177,7 @@ module {
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
       let i = base.size();
-      base.add(true, func(x : S) = x, method, ?(if (not Option.isNull(name)) Nat.toText(i) else ""));
+      base.add(true, func(x : S) = x, method, if (not Option.isNull(name)) ?Nat.toText(i) else null);
       await* base.get(i).run(arg);
       i;
     };
