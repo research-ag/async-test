@@ -26,9 +26,7 @@ module {
     "Method name: " # n # ". Index: " # Nat.toText(index) # ".";
   };
 
-  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, debug_ : Bool, name : ?Text, index : Nat, limit : Nat) {
-    let debug_message : Text = debugMessage(name, index);
-
+  class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, debug_ : Bool, debug_message : Text, limit : Nat) {
     var lock = lock_;
 
     public var state : State = #staged;
@@ -82,7 +80,8 @@ module {
     };
 
     public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) {
-      let response = Response<T, S, R>(lock, pre, post, debug_, name, queue.size(), limit);
+          let debug_message : Text = debugMessage(name, queue.size());
+      let response = Response<T, S, R>(lock, pre, post, debug_, debug_message, limit);
       queue.add(response);
     };
 
