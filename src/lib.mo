@@ -11,32 +11,43 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 
 module {
+  /// State of a response.
   public type State = {
+    /// Response is `#staged` before `call` function call.
     #staged;
+    /// Response is `#running` after `call` and before `release` calls.
     #running;
+    /// Response is `#ready` after `release` call (and maybe some time).
     #ready;
   };
 
+  /// Preprocess function called before on `call` i.e. `#running` state.
   public type PreFunc<T, S> = T -> S;
 
+  /// Preprocess function called before on `release` i.e. `#ready` state.
   public type PostFunc<S, R> = S -> ?R;
 
+  /// Create debug message by `name` and `index`.
   func debugMessage(name : ?Text, index : Nat) : Text {
     let ?n = name else return "";
     "Method name: " # n # ". Index: " # Nat.toText(index) # ".";
   };
 
+  /// Class representing a single method call.
   class Response<T, S, R>(lock_ : Bool, pre_ : PreFunc<T, S>, post_ : PostFunc<S, R>, debug_ : Bool, debug_message : Text, limit : Nat) {
     var lock = lock_;
 
+    /// Current state.
     public var state : State = #staged;
 
     let pre : PreFunc<T, S> = pre_;
 
     public var post : PostFunc<S, R> = post_;
 
+    /// Result (if already present).
     public var result : ?R = null;
 
+    /// Release response.
     public func release() {
       if (not lock) {
         Debug.trap("Response must be locked before release. " # debug_message);
@@ -45,6 +56,7 @@ module {
       lock := false;
     };
 
+    /// Run response.
     public func run(arg : T) : async* () {
       if (debug_) Debug.print("Response is #running. " # debug_message);
       state := #running;
