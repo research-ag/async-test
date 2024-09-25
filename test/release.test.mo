@@ -2,7 +2,7 @@ import AsyncTester "../src";
 import Base "base";
 
 do {
-  let mock = AsyncTester.ReleaseTester<()>(?"mock method", null, Base.DEBUG);
+  let mock = AsyncTester.ReleaseTester<()>(Base.DEBUG, ?"mock method", null);
 
   func g() : async () {
     mock.call_result(await* mock.call());
@@ -27,7 +27,7 @@ do {
 do {
   // We are mocking the target with AsyncTesters
   let target = object {
-    public let get_ = AsyncTester.ReleaseTester<Nat>(?"get", null, Base.DEBUG);
+    public let get_ = AsyncTester.ReleaseTester<Nat>(Base.DEBUG, ?"get", null);
     
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());

@@ -5,7 +5,7 @@ import Array "mo:base/Array";
 import Char "mo:base/Char";
 
 do {
-  let mock = AsyncTester.CallTester<(), ()>(?"mock method", null, Base.DEBUG);
+  let mock = AsyncTester.CallTester<(), ()>(Base.DEBUG, ?"mock method", null);
 
   var x = ?();
 
@@ -64,7 +64,7 @@ do {
     };
   };
 
-  let mock = AsyncTester.CallTester<Text, ()>(?"receive", null, Base.DEBUG);
+  let mock = AsyncTester.CallTester<Text, ()>(Base.DEBUG, ?"receive", null);
 
   let sender = Sender(
     func(t : Text) : async () = async mock.call_result(await* mock.call(t, receive)),

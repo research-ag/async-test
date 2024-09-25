@@ -69,7 +69,7 @@ module {
     };
   };
 
-  class BaseTester<T, S, R>(name : ?Text, iterations_limit : ?Nat, debug_ : Bool) {
+  class BaseTester<T, S, R>(debug_ : Bool, name : ?Text, iterations_limit : ?Nat) {
     var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
@@ -80,7 +80,7 @@ module {
     };
 
     public func add(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) {
-          let debug_message : Text = debugMessage(name, queue.size());
+      let debug_message : Text = debugMessage(name, queue.size());
       let response = Response<T, S, R>(lock, pre, post, debug_, debug_message, limit);
       queue.add(response);
     };
@@ -120,8 +120,8 @@ module {
     };
   };
 
-  public class StageTester<T, S, R>(name : ?Text, iterations_limit : ?Nat, debug_ : Bool) {
-    let base : BaseTester<T, S, R> = BaseTester<T, S, R>(name, iterations_limit, debug_);
+  public class StageTester<T, S, R>(debug_ : Bool, name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<T, S, R> = BaseTester<T, S, R>(debug_, name, iterations_limit);
 
     func stage_(lock : Bool, pre : PreFunc<T, S>, post : PostFunc<S, R>) : Nat {
       if (debug_) Debug.print("Staging response. " # debugMessage(name, base.size()));
@@ -149,8 +149,8 @@ module {
     public func wait(index : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(index, state);
   };
 
-  public class SimpleStageTester<R>(name : ?Text, iterations_limit : ?Nat, debug_ : Bool) {
-    let base : StageTester<(), (), R> = StageTester<(), (), R>(name, iterations_limit, debug_);
+  public class SimpleStageTester<R>(debug_ : Bool, name : ?Text, iterations_limit : ?Nat) {
+    let base : StageTester<(), (), R> = StageTester<(), (), R>(debug_, name, iterations_limit);
 
     public func stage(arg : ?R) : Nat = base.stage(func() = (), func() = arg);
 
@@ -167,8 +167,8 @@ module {
     public func wait(index : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(index, state);
   };
 
-  public class CallTester<S, R>(name : ?Text, iterations_limit : ?Nat, debug_ : Bool) {
-    let base : BaseTester<S, S, R> = BaseTester<S, S, R>(name, iterations_limit, debug_);
+  public class CallTester<S, R>(debug_ : Bool, name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<S, S, R> = BaseTester<S, S, R>(debug_, name, iterations_limit);
 
     public func call(arg : S, method : (S -> ?R)) : async* Nat {
       let index = base.size();
@@ -186,8 +186,8 @@ module {
     public func wait(index : Nat, state : { #running; #ready }) : async* () = async* await* base.wait(index, state);
   };
 
-  public class ReleaseTester<R>(name : ?Text, iterations_limit : ?Nat, debug_ : Bool) {
-    let base : BaseTester<(), (), R> = BaseTester<(), (), R>(name, iterations_limit, debug_);
+  public class ReleaseTester<R>(debug_ : Bool, name : ?Text, iterations_limit : ?Nat) {
+    let base : BaseTester<(), (), R> = BaseTester<(), (), R>(debug_, name, iterations_limit);
 
     public func call() : async* Nat {
       let index = base.size();

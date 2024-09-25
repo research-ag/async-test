@@ -2,7 +2,7 @@ import AsyncTester "../src";
 import Base "base";
 
 do {
-  let mock = AsyncTester.SimpleStageTester<()>(?"mock method", null, Base.DEBUG);
+  let mock = AsyncTester.SimpleStageTester<()>(Base.DEBUG, ?"mock method", null);
 
   func g() : async () {
     mock.call_result(await* mock.call());

@@ -5,7 +5,7 @@ import Base "base";
 do {
   // We are mocking the target with Testers
   let target = object {
-    public let get_ = AsyncTester.StageTester<(), (), Nat>(?"get", null, Base.DEBUG);
+    public let get_ = AsyncTester.StageTester<(), (), Nat>(Base.DEBUG, ?"get", null);
 
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
