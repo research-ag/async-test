@@ -1,4 +1,6 @@
 module {
+  public let DEBUG = false;
+
   public func f(g : () -> async ()) : async Bool {
     try {
       await g();

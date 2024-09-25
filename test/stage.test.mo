@@ -5,14 +5,15 @@ import Base "base";
 do {
   // We are mocking the target with Testers
   let target = object {
-    public let get_ = AsyncTester.StageTester<(), (), Nat>(null);
+    public let get_ = AsyncTester.StageTester<(), (), Nat>(?"get", null, Base.DEBUG);
+
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };
   };
 
-  ignore target.get_.stage(func() = (), func () = ?5);
-  ignore target.get_.stage(func() = (), func () = ?3);
+  ignore target.get_.stage(func() = (), func() = ?5);
+  ignore target.get_.stage(func() = (), func() = ?3);
 
   // We are instantiating the code to test
   let code = Base.CodeToTest(target);
@@ -20,11 +21,11 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  
-  await* target.get_.wait(0);
+
+  await* target.get_.wait(0, #running);
   target.get_.release(0);
 
-  await* target.get_.wait(1);
+  await* target.get_.wait(1, #running);
   target.get_.release(1);
 
   let r0 = await fut0;

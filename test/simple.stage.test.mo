@@ -2,7 +2,7 @@ import AsyncTester "../src";
 import Base "base";
 
 do {
-  let mock = AsyncTester.SimpleStageTester<()>(null);
+  let mock = AsyncTester.SimpleStageTester<()>(?"mock method", null, Base.DEBUG);
 
   func g() : async () {
     mock.call_result(await* mock.call());
@@ -11,7 +11,7 @@ do {
   do {
     let id = mock.stage(?());
     let fut = Base.f(g);
-    await* mock.wait(id);
+    await* mock.wait(id, #running);
     mock.release(id);
     assert (await fut) == true;
   };
@@ -19,7 +19,7 @@ do {
   do {
     let id = mock.stage(null);
     let fut = Base.f(g);
-    await* mock.wait(id);
+    await* mock.wait(id, #running);
     mock.release(id);
     assert (await fut) == false;
   };

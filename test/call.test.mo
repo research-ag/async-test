@@ -5,7 +5,7 @@ import Array "mo:base/Array";
 import Char "mo:base/Char";
 
 do {
-  let mock = AsyncTester.CallTester<(), ()>(null);
+  let mock = AsyncTester.CallTester<(), ()>(?"mock method", null, Base.DEBUG);
 
   var x = ?();
 
@@ -16,7 +16,7 @@ do {
   do {
     x := ?();
     let fut = Base.f(g);
-    await* mock.wait(0);
+    await* mock.wait(0, #running);
     mock.release(0);
     assert (await fut) == true;
   };
@@ -24,7 +24,7 @@ do {
   do {
     x := null;
     let fut = Base.f(g);
-    await* mock.wait(1);
+    await* mock.wait(1, #running);
     mock.release(1);
     assert (await fut) == false;
   };
@@ -64,7 +64,7 @@ do {
     };
   };
 
-  let mock = AsyncTester.CallTester<Text, ()>(null);
+  let mock = AsyncTester.CallTester<Text, ()>(?"receive", null, Base.DEBUG);
 
   let sender = Sender(
     func(t : Text) : async () = async mock.call_result(await* mock.call(t, receive)),
@@ -72,6 +72,6 @@ do {
 
   sender.push("abc");
   let fut = sender.send();
-  await* mock.wait(0);
+  await* mock.wait(0, #running);
   mock.release(0);
 };
