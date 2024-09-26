@@ -2,7 +2,7 @@
 
 ## Overview
 
-Often code under test (CUT) depends on external asyncronous methods. We provide functionality to mock those methods i.e. manage their reponses and response times.
+Often code under test (CUT) depends on external asyncronous methods. We provide functionality to mock those methods i.e. manage their responses and response times.
 
 ### Links
 
@@ -140,7 +140,9 @@ MR Research AG, 2023-2024
 ## Authors
 
 Main author: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
+
 Contributors: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
+
 ## License 
 
 Apache-2.0
