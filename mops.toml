@@ -1,18 +1,14 @@
 [package]
-name = ""
+name = "async-tester"
 version = "0.0.1"
-description = ""
-repository = "https://github.com/research-ag/..."
+description = "Asyncronous methods tester"
+repository = "https://github.com/research-ag/async-tester"
 keywords = [ ]
 license = "Apache-2.0"
 
 [dependencies]
-base = "0.11.1"
-
-[dev-dependencies]
-test = "2.0.0"
-bench = "1.0.0"
+base = "0.13.0"
 
 [toolchain]
-moc = "0.11.1"
+moc = "0.13.0"
 pocket-ic = "1.0.0"

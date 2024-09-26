@@ -5,7 +5,7 @@ import Base "base";
 do {
   // We are mocking the target with Testers
   let target = object {
-    public let get_ = AsyncTester.StageTester<(), (), Nat>(Base.DEBUG, ?"get", null);
+    public let get_ = AsyncTester.StageTester<(), (), Nat>(Base.DEBUG, "get", null);
 
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
@@ -22,14 +22,15 @@ do {
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
 
-  await* target.get_.wait(0, #running);
+  await* target.get_.wait(0, #called);
   target.get_.release(0);
 
-  await* target.get_.wait(1, #running);
+  await* target.get_.wait(1, #called);
   target.get_.release(1);
 
   let r0 = await fut0;
   let r1 = await fut1;
 
   assert r0 == 5 and r1 == 8;
+  target.get_.dispose();
 };

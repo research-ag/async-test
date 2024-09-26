@@ -2,7 +2,7 @@ import AsyncTester "../src";
 import Base "base";
 
 do {
-  let mock = AsyncTester.ReleaseTester<()>(Base.DEBUG, ?"mock method", null);
+  let mock = AsyncTester.ReleaseTester<()>(Base.DEBUG, "mock method", null);
 
   func g() : async () {
     mock.call_result(await* mock.call());
@@ -10,14 +10,14 @@ do {
 
   do {
     let fut = Base.f(g);
-    await* mock.wait(0, #running);
+    await* mock.wait(0, #called);
     mock.release(0, ?());
     assert (await fut) == true;
   };
 
   do {
     let fut = Base.f(g);
-    await* mock.wait(1, #running);
+    await* mock.wait(1, #called);
     mock.release(1, null);
     assert (await fut) == false;
   };
@@ -27,8 +27,8 @@ do {
 do {
   // We are mocking the target with AsyncTesters
   let target = object {
-    public let get_ = AsyncTester.ReleaseTester<Nat>(Base.DEBUG, ?"get", null);
-    
+    public let get_ = AsyncTester.ReleaseTester<Nat>(Base.DEBUG, "get", null);
+
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };
@@ -40,11 +40,11 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  
-  await* target.get_.wait(0, #running);
+
+  await* target.get_.wait(0, #called);
   target.get_.release(0, ?5);
- 
-  await* target.get_.wait(1, #running);
+
+  await* target.get_.wait(1, #called);
   target.get_.release(1, ?3);
 
   let r0 = await fut0;

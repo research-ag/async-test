@@ -33,7 +33,7 @@ module {
     public var balance : Int = 0;
 
     public func fetch() : async* Int {
-      await async {};
+      await async ();
       let delta = await targetAPI.get();
       balance += delta;
       balance;
