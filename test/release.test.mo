@@ -28,7 +28,7 @@ do {
   // We are mocking the target with AsyncTesters
   let target = object {
     public let get_ = AsyncTester.ReleaseTester<Nat>(Base.DEBUG, "get", null);
-    
+
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };
@@ -40,10 +40,10 @@ do {
   // Now the actual test runs
   let fut0 = async await* code.fetch();
   let fut1 = async await* code.fetch();
-  
+
   await* target.get_.wait(0, #called);
   target.get_.release(0, ?5);
- 
+
   await* target.get_.wait(1, #called);
   target.get_.release(1, ?3);
 
