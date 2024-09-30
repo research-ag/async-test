@@ -1,3 +1,5 @@
+import Principal "mo:base/Principal";
+
 module {
   public let DEBUG = false;
 
@@ -37,6 +39,20 @@ module {
       let delta = await targetAPI.get();
       balance += delta;
       balance;
+    };
+  };
+
+  public actor class ActorToTest(targetAPI : Principal) {
+    let api : actor { get : () -> async Nat } = actor (Principal.toText(targetAPI));
+
+    var balance_ : Int = 0;
+
+    public query func balance() : async Int = async balance_;
+
+    public func fetch() : async Int {
+      let delta = await api.get();
+      balance_ += delta;
+      balance_;
     };
   };
 };
