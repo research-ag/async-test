@@ -3,11 +3,11 @@ name = "async-tester"
 version = "0.0.1"
 description = "Asyncronous methods tester"
 repository = "https://github.com/research-ag/async-tester"
-keywords = [ ]
+keywords = [ "interpreter" ]
 license = "Apache-2.0"
 
 [dependencies]
-base = "0.13.0"
+base = "0.14.4"
 
 [toolchain]
 moc = "0.13.0"
