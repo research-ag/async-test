@@ -1,6 +1,6 @@
 /// Async method tester
 ///
-/// Copyright: 2023-2024 MR Research AG
+/// Copyright: 2024-2025 MR Research AG
 /// Main author: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
 /// Contributors: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
 
