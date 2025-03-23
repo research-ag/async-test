@@ -11,4 +11,4 @@ base = "0.14.4"
 
 [toolchain]
 moc = "0.13.0"
-pocket-ic = "1.0.0"
+pocket-ic = "8.0.0"
