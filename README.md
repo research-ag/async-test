@@ -139,7 +139,7 @@ mops test
 
 ## Copyright
 
-MR Research AG, 2023-2025
+MR Research AG, 2024-2025
 ## Authors
 
 Main author: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
