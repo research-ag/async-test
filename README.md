@@ -1,3 +1,6 @@
+[![mops](https://oknww-riaaa-aaaam-qaf6a-cai.raw.ic0.app/badge/mops/async-test)](https://mops.one/async-test)
+[![documentation](https://oknww-riaaa-aaaam-qaf6a-cai.raw.ic0.app/badge/documentation/async-test)](https://mops.one/async-test/docs)
+
 # Asyncronous methods tester for Motoko
 
 ## Overview
@@ -6,9 +9,9 @@ Often code under test (CUT) depends on external asyncronous methods. We provide 
 
 ### Links
 
-The package is published on [MOPS](https://mops.one/async-tester) and [GitHub](https://github.com/research-ag/async-tester).
+The package is published on [MOPS](https://mops.one/async-test) and [GitHub](https://github.com/research-ag/async-test).
 
-The API documentation can be found [here](https://mops.one/async-tester/docs).
+The API documentation can be found [here](https://mops.one/async-test/docs).
 
 For updates, help, questions, feedback and other requests related to this package join us on:
 
@@ -107,12 +110,12 @@ The classes provided in this library are spin-offs of the ExampleTester.
 
 You need `mops` installed. In your project directory run:
 ```
-mops add async-tester
+mops add async-test
 ```
 
 In the Motoko source file import the package as:
 ```
-import AsyncTester "mo:async-tester";
+import AsyncTester "mo:async-test";
 ```
 
 ### Example
@@ -125,7 +128,7 @@ We need up-to-date versions of `node`, `moc` and `mops` installed.
 
 Then run:
 ```
-git clone git@github.com:research-ag/async-tester.git
+git clone git@github.com:research-ag/async-test.git
 mops install
 mops test
 ```
@@ -136,7 +139,7 @@ mops test
 
 ## Copyright
 
-MR Research AG, 2023-2024
+MR Research AG, 2023-2025
 ## Authors
 
 Main author: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)

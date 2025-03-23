@@ -1,8 +1,8 @@
 [package]
-name = "async-tester"
+name = "async-test"
 version = "0.0.1"
 description = "Asyncronous methods tester"
-repository = "https://github.com/research-ag/async-tester"
+repository = "https://github.com/research-ag/async-test"
 keywords = [ "interpreter" ]
 license = "Apache-2.0"
 
