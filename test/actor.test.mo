@@ -1,4 +1,4 @@
-import Principal "mo:base/Principal";
+import Principal "mo:core/Principal";
 import AsyncTester "../src";
 import Base "base";
 
@@ -6,7 +6,7 @@ do {
   let get_ = AsyncTester.StageTester<(), (), Nat>(Base.DEBUG, "get", null);
 
   // We are mocking the target with Testers
-  let target = actor Target {
+  let target = persistent actor Target {
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };

@@ -1,4 +1,4 @@
-import Principal "mo:base/Principal";
+import Principal "mo:core/Principal";
 
 module {
   public let DEBUG = false;
@@ -42,10 +42,10 @@ module {
     };
   };
 
-  public actor class ActorToTest(targetAPI : Principal) {
-    let api : actor { get : () -> async Nat } = actor (Principal.toText(targetAPI));
+  public persistent actor class ActorToTest(targetAPI : Principal) {
+    transient let api : actor { get : () -> async Nat } = actor (Principal.toText(targetAPI));
 
-    var balance_ : Int = 0;
+    transient var balance_ : Int = 0;
 
     public query func balance() : async Int = async balance_;
 

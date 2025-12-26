@@ -65,13 +65,13 @@ class ExampleTester<T>(default : T) {
 
   var x : T = default;
 
-  public func lock() = if (lock_) Debug.trap("") else lock_ := true;
+  public func lock() = if (lock_) Runtime.trap("") else lock_ := true;
 
-  public func release() = if (not lock_) Debug.trap("") else lock_ := false;
+  public func release() = if (not lock_) Runtime.trap("") else lock_ := false;
 
   public func await_unlock() : async* () = async* while (lock_) await async ();
 
-  public func get() : T = if (lock_) Debug.trap("") else x;
+  public func get() : T = if (lock_) Runtime.trap("") else x;
 
   public func set(value : T) = x := value;
 };

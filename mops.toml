@@ -1,13 +1,16 @@
 [package]
 name = "async-test"
-version = "0.0.1"
+version = "0.0.2"
 description = "Asynchronous methods tester"
 repository = "https://github.com/research-ag/async-test"
 keywords = [ "interpreter", "reorder", "simulate", "errors" ]
 license = "Apache-2.0"
 
 [dependencies]
-base = "0.14.4"
+core = "2.0.0"
+
+[requirements]
+moc = "1.0.0"
 
 [toolchain]
-moc = "0.13.0"
+moc = "1.0.0"

@@ -4,11 +4,12 @@
 /// Main author: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
 /// Contributors: Timo Hanke (timohanke), Andrii Stepanov (AStepanov25)
 
-import Debug "mo:base/Debug";
-import Error "mo:base/Error";
-import Option "mo:base/Option";
-import Buffer "mo:base/Buffer";
-import Nat "mo:base/Nat";
+import Debug "mo:core/Debug";
+import Runtime "mo:core/Runtime";
+import Error "mo:core/Error";
+import Option "mo:core/Option";
+import List "mo:core/List";
+import Nat "mo:core/Nat";
 
 module {
   /// State of a response.
@@ -60,7 +61,7 @@ module {
     /// Release response.
     public func release() {
       if (not lock) {
-        Debug.trap("Response must be locked before release. " # debug_message);
+        Runtime.trap("Response must be locked before release. " # debug_message);
       };
       if (debug_) Debug.print("Releasing response. " # debug_message);
       lock := false;
@@ -80,7 +81,7 @@ module {
           inc -= 1;
         };
         if (inc == 0) {
-          Debug.trap("Iteration limit reached in run. " # debug_message);
+          Runtime.trap("Iteration limit reached in run. " # debug_message);
         };
       };
 
@@ -100,14 +101,14 @@ module {
     iterations_limit : ?Nat,
   ) {
     /// A buffer storing `Response` objects.
-    var queue : Buffer.Buffer<Response<T, S, R>> = Buffer.Buffer(1);
+    var queue : List.List<Response<T, S, R>> = List.empty();
     /// Index of the next response to be processed.
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);
 
     /// Retrieves the result of the response at the given index.
     public func call_result(index : Nat) : R {
-      let ?r = get(index).result else Debug.trap("No call result");
+      let ?r = get(index).result else Runtime.trap("No call result");
       r;
     };
 
@@ -126,19 +127,19 @@ module {
       if (front == queue.size()) {
         return null;
       };
-      let r = queue.get(front);
+      let r = queue.at(front);
       front += 1;
       ?r;
     };
 
     /// Retrieves the response at the specified index.
-    public func get(index : Nat) : Response<T, S, R> = queue.get(index);
+    public func get(index : Nat) : Response<T, S, R> = queue.at(index);
 
     /// Retrieves the state of the response at the given index.
-    public func state(index : Nat) : State = queue.get(index).state;
+    public func state(index : Nat) : State = queue.at(index).state;
 
     /// Releases the lock of the response at the given index.
-    public func release(index : Nat) = queue.get(index).release();
+    public func release(index : Nat) = queue.at(index).release();
 
     /// Waits for a response at the given index to reach a specified state.
     public func wait(index : Nat, state : { #called; #responded }) : async* () {
@@ -148,12 +149,12 @@ module {
         case (#responded) 2;
       };
       var inc = limit;
-      while (inc > 0 and (queue.size() <= index or stateNumber(queue.get(index).state) < stateNumber(state))) {
+      while (inc > 0 and (queue.size() <= index or stateNumber(queue.at(index).state) < stateNumber(state))) {
         await async ();
         inc -= 1;
       };
       if (inc == 0) {
-        Debug.trap("Iteration limit reached in wait. " # debugMessage(name, index));
+        Runtime.trap("Iteration limit reached in wait. " # debugMessage(name, index));
       };
       // Thist one needed for the response to be processed by the caller.
       await async ();
@@ -162,7 +163,7 @@ module {
     /// Assert that all the responses are used.
     public func dispose() {
       if (front != queue.size()) {
-        Debug.trap("Some responses are not used. " # debugMessage(name, front));
+        Runtime.trap("Some responses are not used. " # debugMessage(name, front));
       };
     };
   };
@@ -191,7 +192,7 @@ module {
     /// Executes the staged response.
     public func call(arg : T) : async* Nat {
       let index = base.front;
-      let ?r = base.pop() else Debug.trap("Pop out of empty queue");
+      let ?r = base.pop() else Runtime.trap("Pop out of empty queue");
       await* r.run(arg);
       index;
     };

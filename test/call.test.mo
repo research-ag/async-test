@@ -1,8 +1,8 @@
 import AsyncTester "../src";
 import Base "base";
-import Text "mo:base/Text";
-import Array "mo:base/Array";
-import Char "mo:base/Char";
+import Text "mo:core/Text";
+import Char "mo:core/Char";
+import VarArray "mo:core/VarArray";
 
 do {
   let mock = AsyncTester.CallTester<(), ()>(Base.DEBUG, "mock method", null);
@@ -41,7 +41,7 @@ do {
   };
 
   class Sender(receive : Text -> async ()) {
-    let to_send = Array.init<Char>(100, '0');
+    let to_send = VarArray.repeat<Char>('0', 100);
     var start = 0;
     var end = 0;
 
