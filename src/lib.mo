@@ -231,6 +231,7 @@ module {
     /// Executes the staged response. Returns the index of the response.
     public func call() : async* Nat = async* await* base.call();
 
+    /// Retrieves the result of the response at the given index.
     public func call_result(index : Nat) : R = base.call_result(index);
 
     /// Releases the lock of a response.
