@@ -143,6 +143,14 @@ mops install
 mops test
 ```
 
+### Formatting
+
+To format the code, run:
+
+```
+npx -y prettier --plugin prettier-plugin-motoko --write '**/*.{mo,json,md}'
+```
+
 ## Design
 
 ## Implementation notes
