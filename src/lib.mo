@@ -101,7 +101,7 @@ module {
     iterations_limit : ?Nat,
   ) {
     /// A buffer storing `Response` objects.
-    var queue : List.List<Response<T, S, R>> = List.empty();
+    let queue : List.List<Response<T, S, R>> = List.empty();
     /// Index of the next response to be processed.
     public var front = 0;
     let limit = Option.get(iterations_limit, 100);

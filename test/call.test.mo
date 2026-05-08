@@ -67,7 +67,7 @@ do {
   let mock = AsyncTester.CallTester<Text, ()>(Base.DEBUG, "receive", null);
 
   let sender = Sender(
-    func(t : Text) : async () = async mock.call_result(await* mock.call(t, receive)),
+    func(t : Text) : async () = async mock.call_result(await* mock.call(t, receive))
   );
 
   sender.push("abc");

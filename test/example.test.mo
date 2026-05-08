@@ -42,10 +42,10 @@ do {
   };
 
   let code = CodeToTest(target);
-  
+
   target.amount_.set(5);
   target.amount_.lock();
-  
+
   let fut0 = async await* code.fetch();
   await async ();
   target.amount_.release();
