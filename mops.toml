@@ -1,6 +1,6 @@
 [package]
 name = "async-test"
-version = "0.0.5"
+version = "0.1.0"
 description = "Asynchronous methods tester"
 repository = "https://github.com/research-ag/async-test"
 keywords = [ "interpreter", "reorder", "simulate", "errors" ]

@@ -1,6 +1,6 @@
 # Async-tester changelog
 
-## 0.0.5
+## 0.1.0
 
 ### Changed
 
