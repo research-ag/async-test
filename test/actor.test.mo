@@ -6,7 +6,7 @@ do {
   let get_ = AsyncTester.StageTester<(), (), Nat>(Base.DEBUG, "get", null);
 
   // We are mocking the target with Testers
-  let target = persistent actor Target {
+  let target = actor Target {
     public shared func get() : async Nat {
       get_.call_result(await* get_.call());
     };

@@ -56,7 +56,7 @@ do {
       var send = "";
       var i = 0;
       while (start < end and i < CHUNK_LENGTH) {
-        send #= Char.toText(to_send[start]);
+        send #= to_send[start].toText();
         i += 1;
         start += 1;
       };
@@ -67,7 +67,7 @@ do {
   let mock = AsyncTester.CallTester<Text, ()>(Base.DEBUG, "receive", null);
 
   let sender = Sender(
-    func(t : Text) : async () = async mock.call_result(await* mock.call(t, receive))
+    func(t : Text) : async () { mock.call_result(await* mock.call(t, receive)) }
   );
 
   sender.push("abc");
