@@ -31,7 +31,7 @@ module {
   /// Create debug message by `name` and `index`.
   func debugMessage(name : Text, index : Nat) : Text {
     if (name == "") return "";
-    "Method name: " # name # ". Index: " # Nat.toText(index) # ".";
+    "Method name: " # name # ". Index: " # index.toText() # ".";
   };
 
   /// Class representing a single method call.
@@ -104,7 +104,7 @@ module {
     let queue : List.List<Response<T, S, R>> = List.empty();
     /// Index of the next response to be processed.
     public var front = 0;
-    let limit = Option.get(iterations_limit, 100);
+    let limit = iterations_limit.get(100);
 
     /// Retrieves the result of the response at the given index.
     public func call_result(index : Nat) : R {
@@ -207,7 +207,9 @@ module {
     public func state(index : Nat) : State = base.state(index);
 
     /// Waits for a response to reach a specified state.
-    public func wait(index : Nat, state : { #called; #responded }) : async* () = async* await* base.wait(index, state);
+    public func wait(index : Nat, state : { #called; #responded }) : async* () {
+      await* base.wait(index, state);
+    };
 
     /// Assert that all the responses are used.
     public func dispose() = base.dispose();
@@ -229,7 +231,7 @@ module {
     public func stage_unlocked(arg : ?R) : Nat = base.stage_unlocked(func() = (), func() = arg);
 
     /// Executes the staged response. Returns the index of the response.
-    public func call() : async* Nat = async* await* base.call();
+    public func call() : async* Nat { await* base.call() };
 
     /// Retrieves the result of the response at the given index.
     public func call_result(index : Nat) : R = base.call_result(index);
@@ -241,7 +243,9 @@ module {
     public func state(index : Nat) : State = base.state(index);
 
     /// Waits for a response to reach a specified state.
-    public func wait(index : Nat, state : { #called; #responded }) : async* () = async* await* base.wait(index, state);
+    public func wait(index : Nat, state : { #called; #responded }) : async* () {
+      await* base.wait(index, state);
+    };
 
     /// Assert that all the responses are used.
     public func dispose() = base.dispose();
@@ -276,7 +280,9 @@ module {
     public func state(index : Nat) : State = base.state(index);
 
     /// Waits for a response to reach a specified state.
-    public func wait(index : Nat, state : { #called; #responded }) : async* () = async* await* base.wait(index, state);
+    public func wait(index : Nat, state : { #called; #responded }) : async* () {
+      await* base.wait(index, state);
+    };
   };
 
   /// `AsyncTester` variation that stages responses without input
@@ -310,6 +316,8 @@ module {
     public func state(index : Nat) : State = base.state(index);
 
     /// Waits for a response to reach a specified state.
-    public func wait(index : Nat, state : { #called; #responded }) : async* () = async* await* base.wait(index, state);
+    public func wait(index : Nat, state : { #called; #responded }) : async* () {
+      await* base.wait(index, state);
+    };
   };
 };

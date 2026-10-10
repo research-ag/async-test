@@ -42,12 +42,12 @@ module {
     };
   };
 
-  public persistent actor class ActorToTest(targetAPI : Principal) {
-    transient let api : actor { get : () -> async Nat } = actor (Principal.toText(targetAPI));
+  public actor class ActorToTest(targetAPI : Principal) {
+    transient let api : actor { get : () -> async Nat } = actor (targetAPI.toText());
 
     transient var balance_ : Int = 0;
 
-    public query func balance() : async Int = async balance_;
+    public query func balance() : async Int { balance_ };
 
     public func fetch() : async Int {
       let delta = await api.get();
