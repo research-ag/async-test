@@ -16,8 +16,8 @@ jobs:
         with:
           node-version: latest
       - uses: caffeinelabs/setup-mops@v1
-      - run: mops install
-      - run: mops test
+      - run: mops install --locked
+      - run: mops test --locked
 
   fmt:
     name: Formatting Check
