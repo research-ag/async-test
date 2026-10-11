@@ -148,7 +148,8 @@ mops test
 To format the code, run:
 
 ```
-npx -y prettier --plugin prettier-plugin-motoko --write '**/*.{mo,json,md}'
+npm install --no-save prettier prettier-plugin-motoko
+npx prettier --plugin prettier-plugin-motoko --write '**/*.{mo,json,md}'
 ```
 
 ## Design
